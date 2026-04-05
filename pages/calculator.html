@@ -79,36 +79,6 @@
             </div>
           </div>
 
-          <!-- ═══ DEDUCTIONS (FREE) ═══ -->
-          <div class="calc-card">
-            <h3>📝 Deductions</h3>
-            <div class="row">
-              <span class="label">Mortgage Interest</span>
-              <input type="text" inputmode="decimal" class="num-input" id="mortgage" value="0">
-            </div>
-            <div class="row">
-              <span class="label">Property Tax</span>
-              <input type="text" inputmode="decimal" class="num-input" id="propTax" value="0">
-            </div>
-            <div class="row">
-              <span class="label">State & Local Tax (pre-cap)</span>
-              <input type="text" inputmode="decimal" class="num-input" id="stateLocal" value="0">
-            </div>
-            <div class="row">
-              <span class="label">Charitable (cash)</span>
-              <input type="text" inputmode="decimal" class="num-input" id="charitableCash" value="0">
-            </div>
-            <div class="row">
-              <span class="label">Other Deductions</span>
-              <input type="text" inputmode="decimal" class="num-input" id="otherDeductions" value="0">
-            </div>
-            <div class="sep"></div>
-            <div class="row result">
-              <span class="label">Federal Deduction</span>
-              <span class="value" id="outFedDeduction">$32,200</span>
-            </div>
-          </div>
-
           <!-- ═══ STRATEGIES (PREMIUM) ═══ -->
           <div class="premium-overlay">
 
@@ -129,34 +99,46 @@
               <div class="calc-card">
                 <h3>🏠 Box House</h3>
                 <div class="row">
+                  <span class="label">Enable Box House?</span>
+                  <select id="bhOn"><option value="YES">YES</option><option value="NO">NO</option></select>
+                </div>
+                <div class="row">
                   <span class="label">Cash Investment</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="bhCash" value="100,000">
+                  <input type="text" inputmode="decimal" class="num-input" id="bhCash" value="130,000">
                 </div>
                 <div class="row">
                   <span class="label">Leverage Multiple</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="bhLeverage" value="3" style="width:60px">
+                  <input type="text" inputmode="decimal" class="num-input" id="bhLeverage" value="5" style="width:60px">
                 </div>
                 <div class="sep"></div>
                 <div class="row result">
-                  <span class="label">Total Loss (Fed)</span>
-                  <span class="value" id="outBHLoss">$300,000</span>
+                  <span class="label">Box House Loss</span>
+                  <span class="value" id="outBHLoss">$0</span>
                 </div>
               </div>
 
               <div class="calc-card">
                 <h3>🎬 Film §181</h3>
                 <div class="row">
-                  <span class="label">Cash Investment</span>
+                  <span class="label">Enable Film?</span>
+                  <select id="filmOn"><option value="YES">YES</option><option value="NO">NO</option></select>
+                </div>
+                <div class="row">
+                  <span class="label">Material Participation?</span>
+                  <select id="matPart"><option value="YES">YES</option><option value="NO">NO</option></select>
+                </div>
+                <div class="row">
+                  <span class="label">Film Cash</span>
                   <input type="text" inputmode="decimal" class="num-input" id="filmCash" value="100,000">
                 </div>
                 <div class="row">
-                  <span class="label">Leverage Multiple</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="filmLeverage" value="3" style="width:60px">
+                  <span class="label">Film Leverage</span>
+                  <input type="text" inputmode="decimal" class="num-input" id="filmLeverage" value="5" style="width:60px">
                 </div>
                 <div class="sep"></div>
-                <div class="row result">
-                  <span class="label">Total Loss</span>
-                  <span class="value" id="outFilmLoss">$300,000</span>
+                <div class="row result film">
+                  <span class="label">Film §181 Loss</span>
+                  <span class="value" id="outFilmLoss">$0</span>
                 </div>
                 <div class="row" style="font-size:11px;color:var(--accent)">
                   <span class="label">✓ Flows through to NY — no add-back</span>
@@ -166,54 +148,96 @@
               <div class="calc-card">
                 <h3>☀️ Solar ITC</h3>
                 <div class="row">
-                  <span class="label">Equity Investment</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="solarEquity" value="100,000">
+                  <span class="label">Enable Solar?</span>
+                  <select id="solarOn"><option value="YES">YES</option><option value="NO">NO</option></select>
                 </div>
                 <div class="row">
-                  <span class="label">Leverage Multiple</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="solarLeverage" value="5" style="width:60px">
+                  <span class="label">Solar Equity</span>
+                  <input type="text" inputmode="decimal" class="num-input" id="solarEquity" value="77,000">
+                </div>
+                <div class="row">
+                  <span class="label">Solar Leverage</span>
+                  <input type="text" inputmode="decimal" class="num-input" id="solarLeverage" value="2.66" style="width:60px">
+                </div>
+                <div class="row solar">
+                  <span class="label">Solar Asset Price</span>
+                  <span class="value blue" id="outSolarAsset">$0</span>
                 </div>
                 <div class="row">
                   <span class="label">ITC Rate (%)</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="solarITCRate" value="30" style="width:60px">
-                </div>
-                <div class="sep"></div>
-                <div class="row result">
-                  <span class="label">Total Asset</span>
-                  <span class="value" id="outSolarAsset">$500,000</span>
+                  <input type="text" inputmode="decimal" class="num-input" id="solarITCRate" value="36" style="width:60px">
                 </div>
                 <div class="row solar">
-                  <span class="label">ITC Credit</span>
-                  <span class="value blue" id="outSolarITC">$150,000</span>
+                  <span class="label">Solar ITC (direct credit)</span>
+                  <span class="value blue" id="outSolarITC">$0</span>
                 </div>
-                <div class="row result">
-                  <span class="label">Depreciation Loss (Fed)</span>
-                  <span class="value" id="outSolarLoss">$425,000</span>
+                <div class="row solar">
+                  <span class="label">Depreciable Basis</span>
+                  <span class="value" id="outSolarBasis">$0</span>
+                </div>
+                <div class="sep"></div>
+                <div class="row result solar">
+                  <span class="label">Solar Net Yr1 Loss</span>
+                  <span class="value blue" id="outSolarLoss">$0</span>
                 </div>
               </div>
 
               <div class="calc-card">
                 <h3>💝 Leveraged Charitable</h3>
                 <div class="row">
-                  <span class="label">Cash Investment</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="charLevCash" value="0">
+                  <span class="label">Mode</span>
+                  <select id="charMode"><option value="MAX">Maximum (60% AGI)</option><option value="CUSTOM">Custom</option></select>
                 </div>
                 <div class="row">
-                  <span class="label">Leverage Multiple</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="charLevLeverage" value="3" style="width:60px">
+                  <span class="label">Charitable Leverage</span>
+                  <input type="text" inputmode="decimal" class="num-input" id="charLevLeverage" value="6" style="width:60px">
                 </div>
                 <div class="row">
-                  <span class="label" style="display:flex;align-items:center;gap:6px">
-                    Auto-max (60% AGI)
-                    <input type="checkbox" id="charMaxMode">
-                  </span>
+                  <span class="label">Cash Donation</span>
+                  <span class="value" id="outCharCash">$0</span>
                 </div>
                 <div class="sep"></div>
                 <div class="row result">
-                  <span class="label">Donation Value</span>
+                  <span class="label">Charitable Deduction</span>
                   <span class="value" id="outCharDonation">$0</span>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- ═══ DEDUCTIONS (FREE) ═══ -->
+          <div class="calc-card">
+            <h3>📝 Deductions</h3>
+            <div class="row">
+              <span class="label">Type</span>
+              <select id="dedType"><option value="ITEMIZED">Itemized</option><option value="STANDARD">Standard</option></select>
+            </div>
+            <div id="itemizedFields">
+              <div class="row">
+                <span class="label">SALT Cap ($25K)</span>
+                <input type="text" inputmode="decimal" class="num-input" id="stateLocal" value="25,000">
+              </div>
+              <div class="row">
+                <span class="label">Mortgage Interest</span>
+                <input type="text" inputmode="decimal" class="num-input" id="mortgage" value="15,000">
+              </div>
+              <div class="row">
+                <span class="label">Other Itemized</span>
+                <input type="text" inputmode="decimal" class="num-input" id="otherDeductions" value="5,000">
+              </div>
+            </div>
+            <div class="sep"></div>
+            <div class="row result">
+              <span class="label">Federal Deduction</span>
+              <span class="value" id="outFedDeduction">$32,200</span>
+            </div>
+            <div class="row result">
+              <span class="label">Federal Taxable Income</span>
+              <span class="value" id="outFedTaxable">$0</span>
+            </div>
+            <div class="row result">
+              <span class="label">NYS/NYC Taxable Income</span>
+              <span class="value" id="outNYSTaxable">$0</span>
             </div>
           </div>
 
@@ -256,10 +280,6 @@
             <div class="row result">
               <span class="label">AGI</span>
               <span class="value" id="outAGI">$0</span>
-            </div>
-            <div class="row">
-              <span class="label">Federal Taxable Income</span>
-              <span class="value" id="outFedTaxable">$0</span>
             </div>
 
             <h4>Federal</h4>
@@ -449,16 +469,12 @@
             <button class="btn btn-accent btn-lg" id="exportExcel">📥 Export to Excel</button>
           </div>
 
-          </div><!-- /calc-col-full -->
-
           <!-- ═══ BOTTOM CTA (FREE) ═══ -->
-          <div class="calc-col-full">
           <div class="free-only" style="text-align:center;padding:20px 0">
             <p style="color:var(--muted);margin-bottom:12px">Want to see strategies, Year 2 analysis, and MACRS recovery?</p>
             <button class="btn btn-primary btn-lg start-trial-btn">Unlock Pro — 24-Hour Free Trial</button>
           </div>
-
-          </div><!-- /calc-col-full (bottom cta) -->
+          </div><!-- /calc-col-full -->
 
         </div><!-- /calc-body -->
       </div><!-- /calc-wrapper -->

@@ -81,32 +81,20 @@ const TaxEngine = (() => {
     const otherIncome = inputs.otherIncome || 0;
     const grossIncome = salary + spouseSalary + otherIncome;
 
-    /* ── Deductions ── */
-    const mortgage = inputs.mortgage || 0;
-    const propTax = inputs.propTax || 0;
-    const stateLocal = inputs.stateLocal || 0;
-    const charitableCash = inputs.charitableCash || 0;
-    const otherDeductions = inputs.otherDeductions || 0;
-    const saltCap = stateConfig.saltCap || 25000;
-    const saltUsed = Math.min(propTax + stateLocal, saltCap);
-    const itemized = saltUsed + mortgage + charitableCash + otherDeductions;
-    const fedDeduction = Math.max(itemized, b.fedStd);
-    const usingStandard = fedDeduction === b.fedStd;
-
-    /* ── NYS deduction ── */
-    const nysItemizedMinusSalt = Math.max(itemized - saltUsed, 0) + propTax; // prop tax deductible at state level
-    const nysDeduction = Math.max(nysItemizedMinusSalt, b.nysStd);
-
-    /* ── Investment strategies ── */
-    const bhCash = inputs.bhCash || 0;
+    /* ── Investment strategies (with on/off toggles) ── */
+    const bhOn = inputs.bhOn !== false;
+    const bhCash = bhOn ? (inputs.bhCash || 0) : 0;
     const bhLeverage = inputs.bhLeverage || 3;
     const bhLoss = bhCash * bhLeverage;
 
-    const filmCash = inputs.filmCash || 0;
+    const filmOn = inputs.filmOn !== false;
+    const matPart = inputs.matPart !== false;
+    const filmCash = (filmOn && matPart) ? (inputs.filmCash || 0) : 0;
     const filmLeverage = inputs.filmLeverage || 3;
     const filmLoss = filmCash * filmLeverage;
 
-    const solarEquity = inputs.solarEquity || 0;
+    const solarOn = inputs.solarOn !== false;
+    const solarEquity = solarOn ? (inputs.solarEquity || 0) : 0;
     const solarLeverage = inputs.solarLeverage || 5;
     const solarITCRate = inputs.solarITCRate || 0.30;
     const solarAsset = solarEquity * solarLeverage;
@@ -114,21 +102,42 @@ const TaxEngine = (() => {
     const solarBasis = solarAsset - solarITC * 0.5;
     const solarLoss = solarBasis; // 100% bonus depreciation federal
 
-    const charLevCash = inputs.charLevCash || 0;
-    const charLevLeverage = inputs.charLevLeverage || 3;
     const charMaxMode = inputs.charMaxMode || false;
-    let charDonation = charLevCash * charLevLeverage;
+    const charLevLeverage = inputs.charLevLeverage || 3;
 
     /* ── AGI before strategies ── */
     const agiGross = grossIncome;
 
-    /* ── Charitable 60% AGI limit ── */
+    /* ── Charitable: Max mode auto-calculates from AGI, Custom uses cash input ── */
     const charLimit = agiGross * 0.60;
-    if (charMaxMode && charLevCash > 0) {
+    let charCash = 0;
+    let charDonation = 0;
+    if (charMaxMode) {
       charDonation = charLimit;
+      charCash = charLevLeverage > 0 ? charDonation / charLevLeverage : 0;
+    } else {
+      charCash = inputs.charLevCash || 0;
+      charDonation = charCash * charLevLeverage;
     }
     const charUsed = Math.min(charDonation, charLimit);
     const charExcessCF = Math.max(charDonation - charLimit, 0);
+
+    /* ── Deductions ── */
+    const dedType = inputs.dedType || "ITEMIZED";
+    const mortgage = inputs.mortgage || 0;
+    const propTax = inputs.propTax || 0;
+    const stateLocal = inputs.stateLocal || 0;
+    const charitableCash = inputs.charitableCash || 0;
+    const otherDeductions = inputs.otherDeductions || 0;
+    const saltCap = stateConfig.saltCap || 25000;
+    const saltUsed = Math.min(propTax + stateLocal, saltCap);
+    const itemized = saltUsed + mortgage + charitableCash + charUsed + otherDeductions;
+    const fedDeduction = (dedType === "STANDARD") ? b.fedStd : Math.max(itemized, b.fedStd);
+    const usingStandard = fedDeduction === b.fedStd;
+
+    /* ── NYS deduction ── */
+    const nysItemizedMinusSalt = Math.max(itemized - saltUsed, 0) + propTax; // prop tax deductible at state level
+    const nysDeduction = Math.max(nysItemizedMinusSalt, b.nysStd);
 
     /* ── EBL allocation (Film → Solar → BH) ── */
     const mfsBoth = (fs === "MFS") && inputs.mfsBothSpouses;
@@ -228,7 +237,7 @@ const TaxEngine = (() => {
 
     /* ── Combined 2-year ── */
     const combined2YrSavings = yr1Savings + yr2Savings;
-    const totalCashInvested = bhCash + filmCash + solarEquity + charLevCash;
+    const totalCashInvested = bhCash + filmCash + solarEquity + charCash;
     const roi = totalCashInvested > 0 ? combined2YrSavings / totalCashInvested : 0;
 
     return {
@@ -239,8 +248,9 @@ const TaxEngine = (() => {
       saltUsed, itemized, fedDeduction, usingStandard, nysDeduction,
 
       // Strategies
-      bhLoss, filmLoss, solarAsset, solarITC, solarBasis, solarLoss,
-      charDonation: charUsed, charExcessCF,
+      bhOn, bhLoss, filmOn, matPart, filmLoss,
+      solarOn, solarAsset, solarITC, solarBasis, solarLoss,
+      charMaxMode, charCash, charDonation: charUsed, charExcessCF,
 
       // EBL
       eblCap, eblFilm, eblSolar, eblBH, eblTotal, nolCF,

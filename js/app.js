@@ -181,29 +181,47 @@ const App = (() => {
   /* ══════════════════════════════
      Recalculate
      ══════════════════════════════ */
+  function initDeductionType() {
+    const sel = document.getElementById("dedType");
+    if (!sel) return;
+    sel.addEventListener("change", () => {
+      const fields = document.getElementById("itemizedFields");
+      if (fields) fields.style.display = sel.value === "STANDARD" ? "none" : "";
+      recalculate();
+    });
+  }
+
   function recalculate() {
+    const selVal = (id) => { const el = document.getElementById(id); return el ? el.value : null; };
+
     const inputs = {
-      filingStatus: document.getElementById("filingStatus")?.value || "MFJ",
+      filingStatus: selVal("filingStatus") || "MFJ",
       mfsBothSpouses: document.getElementById("mfsBoth")?.checked || false,
       salary: V("salary"),
       spouseSalary: V("spouseSalary"),
       otherIncome: V("otherIncome"),
+      // Deductions
+      dedType: selVal("dedType") || "ITEMIZED",
       mortgage: V("mortgage"),
       propTax: V("propTax"),
       stateLocal: V("stateLocal"),
-      charitableCash: V("charitableCash"),
+      charitableCash: 0, // charitable now in strategy section
       otherDeductions: V("otherDeductions"),
-      // Premium strategies
+      // Premium strategies (with on/off)
+      bhOn: isPremium ? selVal("bhOn") === "YES" : false,
       bhCash: isPremium ? V("bhCash") : 0,
-      bhLeverage: isPremium ? V("bhLeverage") || 3 : 0,
+      bhLeverage: isPremium ? V("bhLeverage") || 5 : 0,
+      filmOn: isPremium ? selVal("filmOn") === "YES" : false,
+      matPart: isPremium ? selVal("matPart") === "YES" : false,
       filmCash: isPremium ? V("filmCash") : 0,
-      filmLeverage: isPremium ? V("filmLeverage") || 3 : 0,
+      filmLeverage: isPremium ? V("filmLeverage") || 5 : 0,
+      solarOn: isPremium ? selVal("solarOn") === "YES" : false,
       solarEquity: isPremium ? V("solarEquity") : 0,
       solarLeverage: isPremium ? V("solarLeverage") || 5 : 0,
       solarITCRate: isPremium ? (V("solarITCRate") / 100 || 0.30) : 0,
+      charMaxMode: isPremium ? selVal("charMode") === "MAX" : false,
       charLevCash: isPremium ? V("charLevCash") : 0,
-      charLevLeverage: isPremium ? V("charLevLeverage") || 3 : 0,
-      charMaxMode: document.getElementById("charMaxMode")?.checked || false,
+      charLevLeverage: isPremium ? V("charLevLeverage") || 6 : 0,
       yr2Salary: V("yr2Salary") || V("salary"),
       yr2SpouseSalary: V("yr2SpouseSalary") || V("spouseSalary"),
       yr2OtherIncome: V("yr2OtherIncome"),
@@ -238,7 +256,9 @@ const App = (() => {
     set("outFilmLoss", fmt(r.filmLoss));
     set("outSolarAsset", fmt(r.solarAsset));
     set("outSolarITC", fmt(r.solarITC));
+    set("outSolarBasis", fmt(r.solarBasis));
     set("outSolarLoss", fmt(r.solarLoss));
+    set("outCharCash", fmt(r.charCash));
     set("outCharDonation", fmt(r.charDonation));
 
     /* EBL */
@@ -395,6 +415,7 @@ const App = (() => {
     initTrial();
     initNumInputs();
     initFilingStatus();
+    initDeductionType();
     initEmailGate();
 
     // Wire all inputs to recalculate
