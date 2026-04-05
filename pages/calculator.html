@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tax Calculator — TaxShield Pro</title>
+  <meta name="description" content="Free NYC tax calculator for Federal + NYS + NYC. Supports MFJ, Single, MFS filing statuses with interactive bracket tables.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <!-- Trial Banner -->
+  <div class="trial-banner" id="trialBanner" style="display:none">
+    🔓 Premium trial active — <span class="timer">23h 59m 59s</span> remaining
+  </div>
+
+  <!-- Nav -->
+  <nav>
+    <div class="container" style="display:flex;justify-content:space-between;align-items:center;height:64px">
+      <a href="../index.html" class="logo">TaxShield<span>Pro</span></a>
+      <div class="nav-links">
+        <a href="calculator.html" style="color:var(--primary)">Calculator</a>
+        <a href="../index.html#features">Features</a>
+        <a href="../index.html#pricing">Pricing</a>
+        <button class="theme-btn" id="themeToggle">🌙</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Calculator -->
+  <section class="section calc-section">
+    <div class="container" style="max-width:900px">
+      <div class="calc-wrapper">
+        <div class="calc-header">
+          <h2>NYC Income Tax Calculator 2026</h2>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="filingStatus" style="width:auto;color:#fff;background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3)">
+              <option value="MFJ">Married Filing Jointly</option>
+              <option value="S">Single</option>
+              <option value="MFS">Married Filing Separately</option>
+            </select>
+            <span style="font-size:12px;opacity:.7">EBL: <span id="eblDisplay">$512,000</span></span>
+          </div>
+        </div>
+
+        <div class="calc-body">
+
+          <!-- ═══ INCOME (FREE) ═══ -->
+          <div class="calc-card">
+            <h3>💰 Income</h3>
+            <div class="row">
+              <span class="label">W-2 Salary</span>
+              <input type="text" inputmode="decimal" class="num-input" id="salary" value="1,300,000">
+            </div>
+            <div class="row" id="mfsModeRow" style="display:none">
+              <span class="label" style="display:flex;align-items:center;gap:8px">
+                Calculate for both spouses
+                <input type="checkbox" id="mfsBoth" checked>
+              </span>
+              <span class="label" style="font-size:11px;color:var(--muted)">EBL: $256K each, $512K combined</span>
+            </div>
+            <div class="row" id="spouseRow" style="display:none">
+              <span class="label">Spouse W-2 Salary</span>
+              <input type="text" inputmode="decimal" class="num-input" id="spouseSalary" value="0">
+            </div>
+            <div class="row">
+              <span class="label">Other Income</span>
+              <input type="text" inputmode="decimal" class="num-input" id="otherIncome" value="0">
+            </div>
+            <div class="sep"></div>
+            <div class="row result">
+              <span class="label">Gross Income</span>
+              <span class="value" id="outGross">$1,300,000</span>
+            </div>
+          </div>
+
+          <!-- ═══ DEDUCTIONS (FREE) ═══ -->
+          <div class="calc-card">
+            <h3>📝 Deductions</h3>
+            <div class="row">
+              <span class="label">Mortgage Interest</span>
+              <input type="text" inputmode="decimal" class="num-input" id="mortgage" value="0">
+            </div>
+            <div class="row">
+              <span class="label">Property Tax</span>
+              <input type="text" inputmode="decimal" class="num-input" id="propTax" value="0">
+            </div>
+            <div class="row">
+              <span class="label">State & Local Tax (pre-cap)</span>
+              <input type="text" inputmode="decimal" class="num-input" id="stateLocal" value="0">
+            </div>
+            <div class="row">
+              <span class="label">Charitable (cash)</span>
+              <input type="text" inputmode="decimal" class="num-input" id="charitableCash" value="0">
+            </div>
+            <div class="row">
+              <span class="label">Other Deductions</span>
+              <input type="text" inputmode="decimal" class="num-input" id="otherDeductions" value="0">
+            </div>
+            <div class="sep"></div>
+            <div class="row result">
+              <span class="label">Federal Deduction</span>
+              <span class="value" id="outFedDeduction">$32,200</span>
+            </div>
+          </div>
+
+          <!-- ═══ STRATEGIES (PREMIUM) ═══ -->
+          <div class="premium-overlay">
+
+            <!-- Premium gate -->
+            <div class="premium-gate free-only" id="premiumGate">
+              <h3>🔒 Unlock Tax Strategies</h3>
+              <p>See how Box House, Film §181, Solar ITC, and Leveraged Charitable investments can save you $200K+ per year.</p>
+              <form id="emailForm" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+                <input type="email" class="email-input" id="emailInput" placeholder="Enter your email for 24-hour free trial" required>
+                <button type="submit" class="btn btn-primary">Start Free Trial</button>
+              </form>
+              <p style="font-size:11px;margin-top:8px;color:var(--muted)">No credit card required. Full access for 24 hours.</p>
+            </div>
+
+            <!-- Strategy inputs (visible only in premium) -->
+            <div class="premium-only" style="display:none">
+
+              <div class="calc-card">
+                <h3>🏠 Box House</h3>
+                <div class="row">
+                  <span class="label">Cash Investment</span>
+                  <input type="text" inputmode="decimal" class="num-input" id="bhCash" value="100,000">
+                </div>
+                <div class="row">
+                  <span class="label">Leverage Multiple</span>
+                  <input type="text" inputmode="decimal" class="num-input" id="bhLeverage" value="3" style="width:60px">
+                </div>
+                <div class="sep"></div>
+                <div class="row result">
+                  <span class="label">Total Loss (Fed)</span>
+                  <span class="value" id="outBHLoss">$300,000</span>
+                </div>
+              </div>
+
+              <div class="calc-card">
+                <h3>🎬 Film §181</h3>
+                <div class="row">
+                  <span class="label">Cash Investment</span>
+                  <input type="text" inputmode="decimal" class="num-input" id="filmCash" value="100,000">
+                </div>
+                <div class="row">
+                  <span class="label">Leverage Multiple</span>
+                  <input type="text" inputmode="decimal" class="num-input" id="filmLeverage" value="3" style="width:60px">
+                </div>
+                <div class="sep"></div>
+                <div class="row result">
+                  <span class="label">Total Loss</span>
+                  <span class="value" id="outFilmLoss">$300,000</span>
+                </div>
+                <div class="row" style="font-size:11px;color:var(--accent)">
+                  <span class="label">✓ Flows through to NY — no add-back</span>
+                </div>
+              </div>
+
+              <div class="calc-card">
+                <h3>☀️ Solar ITC</h3>
+                <div class="row">
+                  <span class="label">Equity Investment</span>
+                  <input type="text" inputmode="decimal" class="num-input" id="solarEquity" value="100,000">
+                </div>
+                <div class="row">
+                  <span class="label">Leverage Multiple</span>
+                  <input type="text" inputmode="decimal" class="num-input" id="solarLeverage" value="5" style="width:60px">
+                </div>
+                <div class="row">
+                  <span class="label">ITC Rate (%)</span>
+                  <input type="text" inputmode="decimal" class="num-input" id="solarITCRate" value="30" style="width:60px">
+                </div>
+                <div class="sep"></div>
+                <div class="row result">
+                  <span class="label">Total Asset</span>
+                  <span class="value" id="outSolarAsset">$500,000</span>
+                </div>
+                <div class="row solar">
+                  <span class="label">ITC Credit</span>
+                  <span class="value blue" id="outSolarITC">$150,000</span>
+                </div>
+                <div class="row result">
+                  <span class="label">Depreciation Loss (Fed)</span>
+                  <span class="value" id="outSolarLoss">$425,000</span>
+                </div>
+              </div>
+
+              <div class="calc-card">
+                <h3>💝 Leveraged Charitable</h3>
+                <div class="row">
+                  <span class="label">Cash Investment</span>
+                  <input type="text" inputmode="decimal" class="num-input" id="charLevCash" value="0">
+                </div>
+                <div class="row">
+                  <span class="label">Leverage Multiple</span>
+                  <input type="text" inputmode="decimal" class="num-input" id="charLevLeverage" value="3" style="width:60px">
+                </div>
+                <div class="row">
+                  <span class="label" style="display:flex;align-items:center;gap:6px">
+                    Auto-max (60% AGI)
+                    <input type="checkbox" id="charMaxMode">
+                  </span>
+                </div>
+                <div class="sep"></div>
+                <div class="row result">
+                  <span class="label">Donation Value</span>
+                  <span class="value" id="outCharDonation">$0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ EBL ALLOCATION (PREMIUM) ═══ -->
+          <div class="premium-only" style="display:none">
+            <div class="calc-card">
+              <h3>⚖️ EBL Allocation (Film → Solar → Box House)</h3>
+              <div class="row film">
+                <span class="label">Film §181</span>
+                <span class="value" id="outEBLFilm">$0</span>
+              </div>
+              <div class="row solar">
+                <span class="label">Solar</span>
+                <span class="value" id="outEBLSolar">$0</span>
+              </div>
+              <div class="row">
+                <span class="label">Box House</span>
+                <span class="value" id="outEBLBH">$0</span>
+              </div>
+              <div class="sep"></div>
+              <div class="row result">
+                <span class="label">Total EBL Used</span>
+                <span class="value" id="outEBLTotal">$0</span>
+              </div>
+              <div class="row nol">
+                <span class="label">NOL Carryforward (excess)</span>
+                <span class="value" id="outNOLCF">$0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ TAX RESULTS (FREE for basic, PREMIUM for full) ═══ -->
+          <div class="calc-card">
+            <h3>🏛️ Tax Calculation</h3>
+            <div class="row result">
+              <span class="label">AGI</span>
+              <span class="value" id="outAGI">$0</span>
+            </div>
+            <div class="row">
+              <span class="label">Federal Taxable Income</span>
+              <span class="value" id="outFedTaxable">$0</span>
+            </div>
+
+            <h4>Federal</h4>
+            <div class="row">
+              <span class="label">Federal Tax (gross)</span>
+              <span class="value" id="outFedTaxGross">$0</span>
+            </div>
+            <div class="row solar premium-only" style="display:none">
+              <span class="label">Solar ITC Applied</span>
+              <span class="value blue" id="outITCApplied">$0</span>
+            </div>
+            <div class="row result">
+              <span class="label">Federal Tax (net)</span>
+              <span class="value" id="outFedTaxNet">$0</span>
+            </div>
+
+            <h4>New York State</h4>
+            <div class="row premium-only" style="display:none">
+              <span class="label">NY Add-Back (BH + Solar)</span>
+              <span class="value" id="outNYAddBack">$0</span>
+            </div>
+            <div class="row">
+              <span class="label">NYS Taxable Income</span>
+              <span class="value" id="outNYSTaxable">$0</span>
+            </div>
+            <div class="row result">
+              <span class="label">NYS Tax</span>
+              <span class="value" id="outNYSTax">$0</span>
+            </div>
+
+            <h4>NYC</h4>
+            <div class="row result">
+              <span class="label">NYC Tax</span>
+              <span class="value" id="outNYCTax">$0</span>
+            </div>
+
+            <h4>FICA</h4>
+            <div class="row result">
+              <span class="label">FICA (SS + Medicare + Add'l)</span>
+              <span class="value" id="outFICA">$0</span>
+            </div>
+
+            <div class="sep"></div>
+            <div class="row total">
+              <span class="label">Total Tax (Year 1)</span>
+              <span class="value" id="outTotalTax">$0</span>
+            </div>
+          </div>
+
+          <!-- ═══ SAVINGS (shows for all, but strategies = 0 for free) ═══ -->
+          <div class="calc-card">
+            <h3>💰 Year 1 Savings</h3>
+            <div class="row">
+              <span class="label">Tax Without Strategies</span>
+              <span class="value" id="outBaseTax">$0</span>
+            </div>
+            <div class="row savings">
+              <span class="label">Year 1 Tax Savings</span>
+              <span class="value pos" id="outYr1Savings">$0</span>
+            </div>
+          </div>
+
+          <!-- ═══ YEAR 2 (PREMIUM) ═══ -->
+          <div class="premium-only" style="display:none">
+            <div class="calc-card">
+              <h3>📅 Year 2 Analysis (NOL + Recapture)</h3>
+              <div class="row">
+                <span class="label">Year 2 Salary</span>
+                <input type="text" inputmode="decimal" class="num-input" id="yr2Salary" value="" placeholder="Same as Year 1">
+              </div>
+              <div class="row" id="yr2SpouseRow" style="display:none">
+                <span class="label">Year 2 Spouse Salary</span>
+                <input type="text" inputmode="decimal" class="num-input" id="yr2SpouseSalary" value="" placeholder="Same">
+              </div>
+              <div class="row">
+                <span class="label">Year 2 Other Income</span>
+                <input type="text" inputmode="decimal" class="num-input" id="yr2OtherIncome" value="0">
+              </div>
+              <div class="row">
+                <span class="label">Solar Recapture Rate (%)</span>
+                <input type="text" inputmode="decimal" class="num-input" id="solarRecaptureRate" value="30" style="width:60px">
+              </div>
+              <div class="sep"></div>
+              <div class="row">
+                <span class="label">Solar Recapture Income</span>
+                <span class="value" id="outSolarRecapture">$0</span>
+              </div>
+              <div class="row result">
+                <span class="label">Year 2 Gross Income</span>
+                <span class="value" id="outYr2Gross">$0</span>
+              </div>
+              <div class="row nol">
+                <span class="label">NOL Applied (offsets ALL income)</span>
+                <span class="value pos" id="outYr2NOL">$0</span>
+              </div>
+              <div class="row result">
+                <span class="label">Year 2 AGI</span>
+                <span class="value" id="outYr2AGI">$0</span>
+              </div>
+              <div class="sep"></div>
+              <div class="row">
+                <span class="label">Year 2 Tax (with NOL)</span>
+                <span class="value" id="outYr2Tax">$0</span>
+              </div>
+              <div class="row">
+                <span class="label">Year 2 Tax (no strategies)</span>
+                <span class="value" id="outYr2BaseTax">$0</span>
+              </div>
+              <div class="row savings">
+                <span class="label">Year 2 Savings</span>
+                <span class="value pos" id="outYr2Savings">$0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ COMBINED 2-YEAR (PREMIUM) ═══ -->
+          <div class="premium-only" style="display:none">
+            <div class="calc-card">
+              <h3>🎯 Combined 2-Year Summary</h3>
+              <div class="row total">
+                <span class="label">Total 2-Year Tax Savings</span>
+                <span class="value" id="outCombinedSavings">$0</span>
+              </div>
+              <div class="row">
+                <span class="label">Total Cash Invested</span>
+                <span class="value" id="outTotalCash">$0</span>
+              </div>
+              <div class="row savings">
+                <span class="label">Return on Investment</span>
+                <span class="value pos" id="outROI">0%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ BRACKET TABLES (FREE) ═══ -->
+          <div class="calc-card">
+            <h3>📊 Federal Tax Brackets</h3>
+            <table class="data-table">
+              <thead>
+                <tr><th>From</th><th>To</th><th>Rate</th><th>Taxable</th><th>Tax</th><th>Cumulative</th></tr>
+              </thead>
+              <tbody id="fedBracketBody"></tbody>
+            </table>
+          </div>
+
+          <div class="calc-card">
+            <h3>📊 New York State Brackets</h3>
+            <table class="data-table">
+              <thead>
+                <tr><th>From</th><th>To</th><th>Rate</th><th>Taxable</th><th>Tax</th><th>Cumulative</th></tr>
+              </thead>
+              <tbody id="nysBracketBody"></tbody>
+            </table>
+          </div>
+
+          <div class="calc-card">
+            <h3>📊 NYC Brackets</h3>
+            <table class="data-table">
+              <thead>
+                <tr><th>From</th><th>To</th><th>Rate</th><th>Taxable</th><th>Tax</th><th>Cumulative</th></tr>
+              </thead>
+              <tbody id="nycBracketBody"></tbody>
+            </table>
+          </div>
+
+          <!-- ═══ MACRS SCHEDULE (PREMIUM) ═══ -->
+          <div class="premium-only" style="display:none">
+            <div class="calc-card">
+              <h3>🏗️ NY MACRS Depreciation Recovery (5-Year)</h3>
+              <p style="font-size:12px;color:var(--muted);margin-bottom:12px">
+                NY add-back of BH + Solar losses recovered via half-year convention MACRS over 6 years.
+              </p>
+              <table class="data-table">
+                <thead>
+                  <tr><th>Year</th><th>Rate</th><th>Depreciation</th><th>State Savings</th><th>PV (5%)</th></tr>
+                </thead>
+                <tbody id="macrsBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ═══ EXPORT (PREMIUM) ═══ -->
+          <div class="premium-only" style="display:none;text-align:center;padding:20px 0">
+            <button class="btn btn-accent btn-lg" id="exportExcel">📥 Export to Excel</button>
+          </div>
+
+          <!-- ═══ BOTTOM CTA (FREE) ═══ -->
+          <div class="free-only" style="text-align:center;padding:20px 0">
+            <p style="color:var(--muted);margin-bottom:12px">Want to see strategies, Year 2 analysis, and MACRS recovery?</p>
+            <button class="btn btn-primary btn-lg start-trial-btn">Unlock Pro — 24-Hour Free Trial</button>
+          </div>
+
+        </div><!-- /calc-body -->
+      </div><!-- /calc-wrapper -->
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-bottom" style="justify-content:center;gap:24px">
+        <span>&copy; 2026 TaxShield Pro</span>
+        <span>For educational purposes only. Not tax advice.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="../js/states/ny.js"></script>
+  <script src="../js/calc-engine.js"></script>
+  <script src="../js/app.js"></script>
+</body>
+</html>
