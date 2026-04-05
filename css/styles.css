@@ -99,9 +99,9 @@ nav .container { display: flex; justify-content: space-between; align-items: cen
 .calc-wrapper { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--card-shadow); }
 .calc-header { background: var(--primary); color: #fff; padding: 24px 32px; display: flex; justify-content: space-between; align-items: center; }
 .calc-header h2 { font-size: 20px; font-weight: 700; }
-.calc-body { padding: 24px 32px; display: grid; grid-template-columns: 5fr 7fr; gap: 24px; align-items: start; grid-template-rows: auto auto; }
+.calc-body { padding: 24px 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; grid-template-rows: auto auto; }
 .calc-col-left { grid-column: 1; grid-row: 1; min-width: 0; overflow: hidden; }
-.calc-col-right { grid-column: 2; grid-row: 1; min-width: 0; overflow: hidden; position: sticky; top: 80px; max-height: calc(100vh - 100px); overflow-y: auto; }
+.calc-col-right { grid-column: 2; grid-row: 1; min-width: 0; overflow: hidden; position: sticky; top: 70px; max-height: calc(100vh - 80px); overflow-y: auto; scrollbar-width: thin; }
 .calc-col-full { grid-column: 1 / -1; }
 .calc-col-right .value { min-width: 90px; font-size: 12px; }
 .calc-card { margin-bottom: 20px; }
