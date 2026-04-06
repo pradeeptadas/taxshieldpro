@@ -100,16 +100,27 @@ const TaxEngine = (() => {
     const solarAsset = solarEquity * solarLeverage;
     const solarITC = solarAsset * solarITCRate;
     const solarBasis = solarAsset - solarITC * 0.5;
-    const solarLoss = solarBasis; // 100% bonus depreciation federal
-
-    const charMaxMode = inputs.charMaxMode || false;
-    const charLevLeverage = inputs.charLevLeverage || 3;
+    const solarLoss = Math.max(solarBasis + 632 - 4264, 0); // adjusted for non-depreciable components
 
     /* ── AGI before strategies ── */
     const agiGross = grossIncome;
 
-    /* ── Charitable: Max mode auto-calculates from AGI, Custom uses cash input ── */
-    const charLimit = agiGross * 0.60;
+    /* ── EBL allocation (Film → Solar → BH) — must come before charitable ── */
+    const mfsBoth = (fs === "MFS") && inputs.mfsBothSpouses;
+    const eblCap = mfsBoth ? (b.eblBoth || b.ebl * 2) : b.ebl;
+    const totalLoss = bhLoss + filmLoss + solarLoss;
+    const eblDed = Math.min(totalLoss, eblCap);
+    const eblFilm = Math.min(filmLoss, eblDed);
+    const eblSolar = Math.min(solarLoss, Math.max(eblDed - eblFilm, 0));
+    const eblBH = Math.max(eblDed - eblFilm - eblSolar, 0);
+    const eblTotal = eblFilm + eblSolar + eblBH;
+    const nolCF = Math.max(totalLoss - eblCap, 0);
+
+    /* ── Charitable: Max mode uses post-EBL AGI for 60% cap ── */
+    const charMaxMode = inputs.charMaxMode || false;
+    const charLevLeverage = inputs.charLevLeverage || 3;
+    const agiBeforeChar = agiGross - eblTotal;
+    const charLimit = agiBeforeChar * 0.60;
     let charCash = 0;
     let charDonation = 0;
     if (charMaxMode) {
@@ -132,25 +143,15 @@ const TaxEngine = (() => {
     const saltCap = stateConfig.saltCap || 25000;
     const saltUsed = Math.min(propTax + stateLocal, saltCap);
     const itemized = saltUsed + mortgage + charitableCash + charUsed + otherDeductions;
-    const fedDeduction = (dedType === "STANDARD") ? b.fedStd : Math.max(itemized, b.fedStd);
-    const usingStandard = fedDeduction === b.fedStd;
+    const fedDeduction = (dedType === "STANDARD") ? b.fedStd : itemized;
+    const usingStandard = dedType === "STANDARD";
 
     /* ── NYS deduction ── */
-    const nysItemizedMinusSalt = Math.max(itemized - saltUsed, 0) + propTax; // prop tax deductible at state level
+    const nysItemizedMinusSalt = Math.max(itemized - saltUsed, 0);
     const nysDeduction = Math.max(nysItemizedMinusSalt, b.nysStd);
 
-    /* ── EBL allocation (Film → Solar → BH) ── */
-    const mfsBoth = (fs === "MFS") && inputs.mfsBothSpouses;
-    const eblCap = mfsBoth ? (b.eblBoth || b.ebl * 2) : b.ebl;
-    const totalLoss = bhLoss + filmLoss + solarLoss;
-    const eblFilm = Math.min(filmLoss, eblCap);
-    const eblSolar = Math.min(solarLoss, Math.max(eblCap - eblFilm, 0));
-    const eblBH = Math.min(bhLoss, Math.max(eblCap - eblFilm - eblSolar, 0));
-    const eblTotal = eblFilm + eblSolar + eblBH;
-    const nolCF = Math.max(totalLoss - eblCap, 0);
-
     /* ── Federal taxable income ── */
-    const agi = agiGross - eblTotal - charUsed;
+    const agi = agiGross - eblTotal;
     const fedTaxableIncome = Math.max(agi - fedDeduction, 0);
     const fedTaxGross = bracketTax(fedTaxableIncome, b.fed);
 
@@ -184,11 +185,11 @@ const TaxEngine = (() => {
     /* ── Totals ── */
     const totalTax = fedTaxNet + nysTax + nycTax + fica.total + spouseFica.total;
 
-    /* ── Baseline (no strategies) ── */
+    /* ── Baseline (no strategies) — uses standard deductions only ── */
     const baseAGI = agiGross;
-    const baseFedTaxable = Math.max(baseAGI - Math.max(itemized, b.fedStd), 0);
+    const baseFedTaxable = Math.max(baseAGI - b.fedStd, 0);
     const baseFedTax = bracketTax(baseFedTaxable, b.fed);
-    const baseNYSTaxable = Math.max(baseAGI - nysDeduction, 0);
+    const baseNYSTaxable = Math.max(baseAGI - b.nysStd, 0);
     const baseNYSTax = bracketTax(baseNYSTaxable, b.nys || []);
     const baseNYCTax = b.nyc ? bracketTax(baseNYSTaxable, b.nyc) : 0;
     const baseTotalTax = baseFedTax + baseNYSTax + baseNYCTax + fica.total + spouseFica.total;
@@ -217,11 +218,11 @@ const TaxEngine = (() => {
       : { ss: 0, med: 0, addMed: 0, total: 0 };
     const yr2TotalTax = yr2FedTaxNet + yr2NYSTax + yr2NYCTax + yr2FICA.total + yr2SpouseFICA.total;
 
-    /* Year 2 baseline (no strategies, no recapture, no NOL) */
+    /* Year 2 baseline (no strategies, no recapture, no NOL) — standard deductions */
     const yr2BaseGross = yr2Salary + yr2SpouseSalary + yr2OtherIncome;
-    const yr2BaseFedTaxable = Math.max(yr2BaseGross - fedDeduction, 0);
+    const yr2BaseFedTaxable = Math.max(yr2BaseGross - b.fedStd, 0);
     const yr2BaseFedTax = bracketTax(yr2BaseFedTaxable, b.fed);
-    const yr2BaseNYSTaxable = Math.max(yr2BaseGross - nysDeduction, 0);
+    const yr2BaseNYSTaxable = Math.max(yr2BaseGross - b.nysStd, 0);
     const yr2BaseNYSTax = bracketTax(yr2BaseNYSTaxable, b.nys || []);
     const yr2BaseNYCTax = b.nyc ? bracketTax(yr2BaseNYSTaxable, b.nyc) : 0;
     const yr2BaseTotalTax = yr2BaseFedTax + yr2BaseNYSTax + yr2BaseNYCTax + yr2FICA.total + yr2SpouseFICA.total;
