@@ -194,9 +194,28 @@ const App = (() => {
     const cityLabel = document.getElementById("cityTaxLabel");
     if (cityLabel) cityLabel.textContent = (config.city || "City") + " Tax";
 
-    // Show/hide city section
+    // City tax toggle
+    const cityToggle = document.getElementById("cityTaxOn");
+    const cityToggleLabel = document.getElementById("cityTaxToggleLabel");
+    const cityToggleText = document.getElementById("cityTaxToggleText");
+    if (cityToggle) {
+      if (feat.hasCityTax) {
+        cityToggle.disabled = false;
+        cityToggle.checked = true;
+        if (cityToggleLabel) cityToggleLabel.style.opacity = "0.9";
+        if (cityToggleText) cityToggleText.textContent = (config.city || "City") + " Tax";
+      } else {
+        cityToggle.disabled = true;
+        cityToggle.checked = false;
+        if (cityToggleLabel) cityToggleLabel.style.opacity = "0.4";
+        if (cityToggleText) cityToggleText.textContent = "No City Tax";
+      }
+    }
+
+    // Show/hide city section based on toggle
+    const cityOn = cityToggle ? cityToggle.checked : false;
     const citySection = document.getElementById("cityTaxSection");
-    if (citySection) citySection.style.display = feat.hasCityTax ? "" : "none";
+    if (citySection) citySection.style.display = cityOn ? "" : "none";
 
     // Show/hide state add-back section
     const addBackSection = document.getElementById("stateAddBackSection");
@@ -235,7 +254,7 @@ const App = (() => {
     const stateBracketSection = document.getElementById("stateBracketSection");
     if (stateBracketSection) stateBracketSection.style.display = feat.hasNoIncomeTax ? "none" : "";
     const cityBracketSection = document.getElementById("cityBracketSection");
-    if (cityBracketSection) cityBracketSection.style.display = feat.hasCityTax ? "" : "none";
+    if (cityBracketSection) cityBracketSection.style.display = cityOn ? "" : "none";
   }
 
   /* ══════════════════════════════
@@ -305,6 +324,7 @@ const App = (() => {
     const inputs = {
       filingStatus: selVal("filingStatus") || "MFJ",
       mfsBothSpouses: document.getElementById("mfsBoth")?.checked || false,
+      cityTaxOn: !!document.getElementById("cityTaxOn")?.checked,
       salary: V("salary"),
       spouseSalary: V("spouseSalary"),
       otherIncome: V("otherIncome"),
@@ -338,6 +358,13 @@ const App = (() => {
 
     currentStateConfig = getSelectedConfig();
     if (!currentStateConfig) return;
+
+    // Update city section visibility based on toggle
+    const cityOn = !!document.getElementById("cityTaxOn")?.checked;
+    const citySection = document.getElementById("cityTaxSection");
+    if (citySection) citySection.style.display = cityOn ? "" : "none";
+    const cityBracketSection = document.getElementById("cityBracketSection");
+    if (cityBracketSection) cityBracketSection.style.display = cityOn ? "" : "none";
 
     try {
       currentResult = TaxEngine.calculate(inputs, currentStateConfig);

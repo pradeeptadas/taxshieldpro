@@ -182,11 +182,14 @@ const TaxEngine = (() => {
       }
     }
 
+    const cityTaxOn = inputs.cityTaxOn !== false; // default true for backward compat
     let cityTax = 0;
-    if (stateConfig.calcCityTax) {
-      cityTax = stateConfig.calcCityTax(cityTaxableIncome, b);
-    } else if (b.city) {
-      cityTax = bracketTax(cityTaxableIncome, b.city);
+    if (cityTaxOn) {
+      if (stateConfig.calcCityTax) {
+        cityTax = stateConfig.calcCityTax(cityTaxableIncome, b);
+      } else if (b.city) {
+        cityTax = bracketTax(cityTaxableIncome, b.city);
+      }
     }
 
     /* ── FICA ── */
@@ -214,7 +217,7 @@ const TaxEngine = (() => {
       }
     }
     const baseStateTaxable = Math.max(baseAGI - stateStd, 0);
-    const baseCityTax = b.city ? bracketTax(baseStateTaxable, b.city) : 0;
+    const baseCityTax = (cityTaxOn && b.city) ? bracketTax(baseStateTaxable, b.city) : 0;
     const baseTotalTax = baseFedTax + baseStateTax + baseCityTax + fica.total + spouseFica.total;
     const yr1Savings = baseTotalTax - totalTax;
 
@@ -245,7 +248,7 @@ const TaxEngine = (() => {
         yr2StateTax = bracketTax(yr2StateTaxable, b.state);
       }
     }
-    const yr2CityTax = b.city ? bracketTax(yr2StateTaxable, b.city) : 0;
+    const yr2CityTax = (cityTaxOn && b.city) ? bracketTax(yr2StateTaxable, b.city) : 0;
     const yr2FICA = calcFICA(yr2Salary, b.addMedThreshold);
     const yr2SpouseFICA = (fs === "MFS" && yr2SpouseSalary > 0)
       ? calcFICA(yr2SpouseSalary, b.addMedThreshold)
@@ -267,7 +270,7 @@ const TaxEngine = (() => {
         yr2BaseStateTax = bracketTax(yr2BaseStateTaxable, b.state);
       }
     }
-    const yr2BaseCityTax = b.city ? bracketTax(yr2BaseStateTaxable, b.city) : 0;
+    const yr2BaseCityTax = (cityTaxOn && b.city) ? bracketTax(yr2BaseStateTaxable, b.city) : 0;
     const yr2BaseTotalTax = yr2BaseFedTax + yr2BaseStateTax + yr2BaseCityTax + yr2FICA.total + yr2SpouseFICA.total;
     const yr2Savings = yr2BaseTotalTax - yr2TotalTax;
 
