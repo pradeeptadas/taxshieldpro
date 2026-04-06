@@ -306,6 +306,59 @@ test("Charitable custom mode with $0 cash = $0 donation", () => {
 });
 
 // ═══════════════════════════════════════════════════════
+// Year 2 — All Strategies ON
+// ═══════════════════════════════════════════════════════
+
+console.log("\n══ Year 2 — All Strategies ON ══\n");
+
+test("Year 2 solar recapture > 0 when solar ON", () => {
+  assert(r.solarRecapture > 0, `solarRecapture should be > 0, got ${r.solarRecapture}`);
+});
+
+test("Year 2 NOL applied > 0 when strategies ON", () => {
+  assert(r.yr2NOLApplied > 0, `yr2NOLApplied should be > 0, got ${r.yr2NOLApplied}`);
+});
+
+test("Year 2 total tax < base tax when strategies ON", () => {
+  assert(r.yr2TotalTax < r.yr2BaseTotalTax, `yr2TotalTax ${r.yr2TotalTax} should be < yr2BaseTotalTax ${r.yr2BaseTotalTax}`);
+});
+
+test("Year 2 savings > 0 when strategies ON", () => {
+  assert(r.yr2Savings > 0, `yr2Savings should be > 0, got ${r.yr2Savings}`);
+});
+
+// ═══════════════════════════════════════════════════════
+// Year 2 — All Strategies OFF
+// ═══════════════════════════════════════════════════════
+
+console.log("\n══ Year 2 — All Strategies OFF ══\n");
+
+test("Year 2 solar recapture = 0 when solar OFF", () => {
+  assertClose(ns.solarRecapture, 0, "solarRecapture");
+});
+
+test("Year 2 NOL = 0 when no strategies", () => {
+  assertClose(ns.nolCF, 0, "nolCF");
+  assertClose(ns.yr2NOLApplied, 0, "yr2NOLApplied");
+});
+
+test("Year 2 savings ~= $0 when no strategies", () => {
+  assertClose(ns.yr2Savings, 0, "yr2Savings", 500);
+});
+
+test("Year 2 total tax ~= Year 2 base tax when no strategies", () => {
+  assertClose(ns.yr2TotalTax, ns.yr2BaseTotalTax, "yr2TotalTax vs yr2BaseTotalTax", 500);
+});
+
+test("Total cash invested = $0 when no strategies", () => {
+  assertClose(ns.totalCashInvested, 0, "totalCashInvested");
+});
+
+test("Combined 2-year savings ~= $0 when no strategies", () => {
+  assertClose(ns.combined2YrSavings, 0, "combined2YrSavings", 1000);
+});
+
+// ═══════════════════════════════════════════════════════
 // Summary
 // ═══════════════════════════════════════════════════════
 
