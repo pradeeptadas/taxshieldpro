@@ -5,6 +5,7 @@
 
 const TaxEngine = require("../js/calc-engine");
 const NY_CONFIG = require("../js/states/ny");
+const StateRegistry = require("../js/states/registry");
 
 function assert(condition, msg) {
   if (!condition) throw new Error("FAIL: " + msg);
@@ -63,7 +64,7 @@ const DEFAULT_INPUTS = {
   charLevCash: 0,
 };
 
-console.log("\n══ Default Scenario: $1.3M MFJ, All Strategies ══\n");
+console.log("\n══ Default Scenario: $1.3M MFJ, All Strategies (NY) ══\n");
 
 const r = TaxEngine.calculate(DEFAULT_INPUTS, NY_CONFIG);
 
@@ -135,8 +136,8 @@ test("Fed Taxable Income = $270,200", () => {
   assertClose(r.fedTaxableIncome, 270200, "fedTaxableIncome", 2);
 });
 
-test("NYS Taxable Income = $307,200", () => {
-  assertClose(r.nysTaxableIncome, 307200, "nysTaxableIncome", 2);
+test("State Taxable Income = $307,200", () => {
+  assertClose(r.stateTaxableIncome, 307200, "stateTaxableIncome", 2);
 });
 
 // --- Taxes ---
@@ -152,12 +153,12 @@ test("Federal Tax (net) = $0", () => {
   assertClose(r.fedTaxNet, 0, "fedTaxNet");
 });
 
-test("NYS Tax = $16,985", () => {
-  assertClose(r.nysTax, 16985, "nysTax", 2);
+test("State Tax = $16,985", () => {
+  assertClose(r.stateTax, 16985, "stateTax", 2);
 });
 
-test("NYC Tax = $11,682", () => {
-  assertClose(r.nycTax, 11682, "nycTax", 2);
+test("City Tax = $11,682", () => {
+  assertClose(r.cityTax, 11682, "cityTax", 2);
 });
 
 test("FICA = $39,218", () => {
@@ -186,7 +187,7 @@ test("Total Cash Invested = $385,800", () => {
 // Strategies OFF — should equal base tax
 // ═══════════════════════════════════════════════════════
 
-console.log("\n══ No Strategies (all OFF) ══\n");
+console.log("\n══ No Strategies (all OFF, NY) ══\n");
 
 const noStratInputs = {
   ...DEFAULT_INPUTS,
@@ -215,7 +216,7 @@ test("Year 1 Savings = $0 (no strategies)", () => {
 // Single filer — $500K salary, no strategies
 // ═══════════════════════════════════════════════════════
 
-console.log("\n══ Single Filer $500K, No Strategies ══\n");
+console.log("\n══ Single Filer $500K, No Strategies (NY) ══\n");
 
 const singleInputs = {
   filingStatus: "S",
@@ -309,7 +310,7 @@ test("Charitable custom mode with $0 cash = $0 donation", () => {
 // Year 2 — All Strategies ON
 // ═══════════════════════════════════════════════════════
 
-console.log("\n══ Year 2 — All Strategies ON ══\n");
+console.log("\n══ Year 2 — All Strategies ON (NY) ══\n");
 
 test("Year 2 solar recapture > 0 when solar ON", () => {
   assert(r.solarRecapture > 0, `solarRecapture should be > 0, got ${r.solarRecapture}`);
@@ -331,7 +332,7 @@ test("Year 2 savings > 0 when strategies ON", () => {
 // Year 2 — All Strategies OFF
 // ═══════════════════════════════════════════════════════
 
-console.log("\n══ Year 2 — All Strategies OFF ══\n");
+console.log("\n══ Year 2 — All Strategies OFF (NY) ══\n");
 
 test("Year 2 solar recapture = 0 when solar OFF", () => {
   assertClose(ns.solarRecapture, 0, "solarRecapture");
@@ -356,6 +357,142 @@ test("Total cash invested = $0 when no strategies", () => {
 
 test("Combined 2-year savings = $0 when no strategies", () => {
   assertClose(ns.combined2YrSavings, 0, "combined2YrSavings", 2);
+});
+
+// ═══════════════════════════════════════════════════════
+// Cross-State Tests
+// ═══════════════════════════════════════════════════════
+
+console.log("\n══ Cross-State: No Income Tax (Florida) ══\n");
+
+const FL_CONFIG = StateRegistry.get("FL");
+const flInputs = { ...noStratInputs };
+const fl = TaxEngine.calculate(flInputs, FL_CONFIG);
+
+test("FL: no state tax", () => {
+  assertClose(fl.stateTax, 0, "stateTax");
+});
+
+test("FL: no city tax", () => {
+  assertClose(fl.cityTax, 0, "cityTax");
+});
+
+test("FL: total tax = federal + FICA only", () => {
+  assertClose(fl.totalTax, fl.fedTaxNet + fl.fica.total, "totalTax", 2);
+});
+
+test("FL: total tax < NY total tax (same income)", () => {
+  assert(fl.totalTax < ns.totalTax, `FL ${fl.totalTax} should be < NY ${ns.totalTax}`);
+});
+
+console.log("\n══ Cross-State: Flat Tax (Illinois 4.95%) ══\n");
+
+const IL_CONFIG = StateRegistry.get("IL");
+const ilInputs = { ...noStratInputs };
+const il = TaxEngine.calculate(ilInputs, IL_CONFIG);
+
+test("IL: state tax uses flat rate", () => {
+  // IL: flat 4.95%, std deduction $5,250 MFJ
+  const ilStd = IL_CONFIG.brackets.MFJ.stateStd;
+  const expectedStateTaxable = Math.max(1300000 - ilStd, 0);
+  const expectedStateTax = expectedStateTaxable * 0.0495;
+  assertClose(il.stateTax, expectedStateTax, "stateTax", 2);
+});
+
+test("IL: no city tax", () => {
+  assertClose(il.cityTax, 0, "cityTax");
+});
+
+console.log("\n══ Cross-State: California (progressive) ══\n");
+
+const CA_CONFIG = StateRegistry.get("CA");
+const caInputs = { ...noStratInputs };
+const ca = TaxEngine.calculate(caInputs, CA_CONFIG);
+
+test("CA: state tax > 0", () => {
+  assert(ca.stateTax > 0, `CA stateTax should be > 0, got ${ca.stateTax}`);
+});
+
+test("CA: no city tax", () => {
+  assertClose(ca.cityTax, 0, "cityTax");
+});
+
+test("CA: decouples bonus depreciation", () => {
+  assert(CA_CONFIG.features.decouplesBonusDepreciation === true, "CA should decouple bonus depreciation");
+});
+
+console.log("\n══ Cross-State: Texas (no income tax) ══\n");
+
+const TX_CONFIG = StateRegistry.get("TX");
+const tx = TaxEngine.calculate(noStratInputs, TX_CONFIG);
+
+test("TX: no state tax", () => {
+  assertClose(tx.stateTax, 0, "stateTax");
+});
+
+test("TX: same fed tax as FL (same income, no strategies)", () => {
+  assertClose(tx.fedTaxNet, fl.fedTaxNet, "fedTaxNet", 2);
+});
+
+console.log("\n══ Cross-State: NY with strategies ══\n");
+
+const nyStrat = TaxEngine.calculate(DEFAULT_INPUTS, NY_CONFIG);
+
+test("NY: state add-back > 0 (decouples bonus depreciation)", () => {
+  assert(nyStrat.stateAddBack > 0, `stateAddBack should be > 0, got ${nyStrat.stateAddBack}`);
+});
+
+test("NY: MACRS basis = state add-back", () => {
+  assertClose(nyStrat.macrsBasis, nyStrat.stateAddBack, "macrsBasis", 2);
+});
+
+console.log("\n══ Cross-State: FL with strategies ══\n");
+
+const flStrat = TaxEngine.calculate(DEFAULT_INPUTS, FL_CONFIG);
+
+test("FL: no state add-back (no decoupling)", () => {
+  assertClose(flStrat.stateAddBack, 0, "stateAddBack");
+});
+
+test("FL: no state tax even with strategies", () => {
+  assertClose(flStrat.stateTax, 0, "stateTax");
+});
+
+console.log("\n══ State Registry ══\n");
+
+test("Registry has 51 entries (50 states + DC)", () => {
+  assertClose(StateRegistry.allIds.length, 51, "allIds.length");
+});
+
+test("Registry get() returns null for invalid state", () => {
+  assert(StateRegistry.get("XX") === null, "should return null for XX");
+});
+
+test("All registry configs have required fields", () => {
+  for (const id of StateRegistry.allIds) {
+    const cfg = StateRegistry.get(id);
+    assert(cfg.id === id, `${id}: id mismatch`);
+    assert(cfg.name, `${id}: missing name`);
+    assert(cfg.brackets, `${id}: missing brackets`);
+    assert(cfg.brackets.MFJ, `${id}: missing MFJ brackets`);
+    assert(cfg.brackets.S, `${id}: missing S brackets`);
+    assert(cfg.features !== undefined, `${id}: missing features`);
+  }
+});
+
+test("All states produce valid tax with $500K MFJ no strategies", () => {
+  const baseInputs = {
+    filingStatus: "MFJ", salary: 500000, dedType: "STANDARD",
+    bhOn: false, filmOn: false, solarOn: false, charMaxMode: false
+  };
+  for (const id of StateRegistry.allIds) {
+    const cfg = StateRegistry.get(id);
+    const result = TaxEngine.calculate(baseInputs, cfg);
+    assert(!isNaN(result.totalTax), `${id}: totalTax is NaN`);
+    assert(result.totalTax >= 0, `${id}: totalTax is negative: ${result.totalTax}`);
+    assert(result.fedTaxNet >= 0, `${id}: fedTaxNet is negative`);
+    assert(result.stateTax >= 0, `${id}: stateTax is negative`);
+  }
 });
 
 // ═══════════════════════════════════════════════════════

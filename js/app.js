@@ -8,6 +8,7 @@ const App = (() => {
 
   /* ── State ── */
   let currentResult = null;
+  let currentStateConfig = null;
   let isPremium = false;
   const TRIAL_KEY = "tsp_trial_start";
   const TRIAL_MS = 24 * 60 * 60 * 1000; // 1 day
@@ -140,6 +141,104 @@ const App = (() => {
   }
 
   /* ══════════════════════════════
+     State Selector
+     ══════════════════════════════ */
+  function initStateSelector() {
+    const sel = document.getElementById("stateSelector");
+    if (!sel || typeof StateRegistry === "undefined") return;
+
+    // Populate dropdown
+    const states = StateRegistry.getAll();
+    sel.innerHTML = states.map(s =>
+      `<option value="${s.id}"${s.id === "NY" ? " selected" : ""}>${s.name} (${s.id})</option>`
+    ).join("");
+
+    // Restore saved state
+    const saved = localStorage.getItem("tsp_state");
+    if (saved && StateRegistry.get(saved)) sel.value = saved;
+
+    sel.addEventListener("change", () => {
+      localStorage.setItem("tsp_state", sel.value);
+      updateStateUI();
+      recalculate();
+    });
+
+    updateStateUI();
+  }
+
+  function getSelectedConfig() {
+    const sel = document.getElementById("stateSelector");
+    if (sel && typeof StateRegistry !== "undefined") {
+      return StateRegistry.get(sel.value) || StateRegistry.get("NY");
+    }
+    // Fallback to NY_CONFIG if registry not loaded
+    if (typeof NY_CONFIG !== "undefined") return NY_CONFIG;
+    return null;
+  }
+
+  function updateStateUI() {
+    const config = getSelectedConfig();
+    if (!config) return;
+    const feat = config.features || {};
+
+    // Update labels
+    const stateLabel = document.getElementById("stateTaxLabel");
+    if (stateLabel) {
+      if (feat.hasNoIncomeTax) {
+        stateLabel.textContent = config.name + " (No Income Tax)";
+      } else {
+        stateLabel.textContent = config.name + " Tax";
+      }
+    }
+
+    const cityLabel = document.getElementById("cityTaxLabel");
+    if (cityLabel) cityLabel.textContent = (config.city || "City") + " Tax";
+
+    // Show/hide city section
+    const citySection = document.getElementById("cityTaxSection");
+    if (citySection) citySection.style.display = feat.hasCityTax ? "" : "none";
+
+    // Show/hide state add-back section
+    const addBackSection = document.getElementById("stateAddBackSection");
+    if (addBackSection) addBackSection.style.display = feat.decouplesBonusDepreciation ? "" : "none";
+
+    // Show/hide MACRS section
+    const macrsSection = document.getElementById("macrsSection");
+    if (macrsSection) macrsSection.style.display = feat.decouplesBonusDepreciation ? "" : "none";
+
+    // Film flow-through note
+    const filmNote = document.getElementById("filmFlowNote");
+    if (filmNote) filmNote.style.display = feat.filmFlowsThrough ? "" : "none";
+
+    // Update EBL display
+    const fs = document.getElementById("filingStatus")?.value || "MFJ";
+    const b = config.brackets[fs];
+    const eblInput = document.getElementById("eblDisplay");
+    if (eblInput && b) {
+      const isMFS = fs === "MFS";
+      if (isMFS) {
+        const both = document.getElementById("mfsBoth")?.checked;
+        const eblVal = both ? (b.eblBoth || b.ebl * 2) : b.ebl;
+        eblInput.textContent = "$" + eblVal.toLocaleString() + (both ? " (both)" : " (one)");
+      } else {
+        eblInput.textContent = "$" + b.ebl.toLocaleString();
+      }
+    }
+
+    // State bracket table label
+    const stateBracketLabel = document.getElementById("stateBracketLabel");
+    if (stateBracketLabel) stateBracketLabel.textContent = config.name + " Brackets";
+    const cityBracketLabel = document.getElementById("cityBracketLabel");
+    if (cityBracketLabel) cityBracketLabel.textContent = (config.city || "City") + " Brackets";
+
+    // Hide state bracket table for no-income-tax states
+    const stateBracketSection = document.getElementById("stateBracketSection");
+    if (stateBracketSection) stateBracketSection.style.display = feat.hasNoIncomeTax ? "none" : "";
+    const cityBracketSection = document.getElementById("cityBracketSection");
+    if (cityBracketSection) cityBracketSection.style.display = feat.hasCityTax ? "" : "none";
+  }
+
+  /* ══════════════════════════════
      Filing Status
      ══════════════════════════════ */
   function initFilingStatus() {
@@ -152,22 +251,12 @@ const App = (() => {
       const spouseRow = document.getElementById("spouseRow");
       const yr2SpouseRow = document.getElementById("yr2SpouseRow");
       const mfsModeRow = document.getElementById("mfsModeRow");
-      const eblInput = document.getElementById("eblDisplay");
 
       if (spouseRow) spouseRow.style.display = isMFS ? "" : "none";
       if (yr2SpouseRow) yr2SpouseRow.style.display = isMFS ? "" : "none";
       if (mfsModeRow) mfsModeRow.style.display = isMFS ? "" : "none";
 
-      if (eblInput) {
-        const b = NY_CONFIG.brackets[fs];
-        if (isMFS) {
-          const both = document.getElementById("mfsBoth")?.checked;
-          const eblVal = both ? (b.eblBoth || b.ebl * 2) : b.ebl;
-          eblInput.textContent = "$" + eblVal.toLocaleString() + (both ? " (both)" : " (one)");
-        } else {
-          eblInput.textContent = "$" + (b ? b.ebl.toLocaleString() : "512,000");
-        }
-      }
+      updateStateUI();
       recalculate();
     };
 
@@ -247,8 +336,11 @@ const App = (() => {
       solarRecaptureRate: V("solarRecaptureRate") / 100 || 0.30
     };
 
+    currentStateConfig = getSelectedConfig();
+    if (!currentStateConfig) return;
+
     try {
-      currentResult = TaxEngine.calculate(inputs, NY_CONFIG);
+      currentResult = TaxEngine.calculate(inputs, currentStateConfig);
       renderResults(currentResult);
     } catch (e) {
       console.error("Calculation error:", e);
@@ -291,10 +383,11 @@ const App = (() => {
     set("outFedTaxGross", fmt(r.fedTaxGross));
     set("outITCApplied", fmt(r.itcApplied));
     set("outFedTaxNet", fmt(r.fedTaxNet));
-    set("outNYAddBack", fmt(r.nyAddBack));
-    set("outNYSTaxable", fmt(r.nysTaxableIncome));
-    set("outNYSTax", fmt(r.nysTax));
-    set("outNYCTax", fmt(r.nycTax));
+    set("outStateAddBack", fmt(r.stateAddBack));
+    set("outStateTaxable", fmt(r.stateTaxableIncome));
+    set("outStateTaxResult", fmt(r.stateTaxableIncome));
+    set("outStateTax", fmt(r.stateTax));
+    set("outCityTax", fmt(r.cityTax));
     set("outFICA", fmt(r.fica.total));
     set("outTotalTax", fmt(r.totalTax));
 
@@ -318,8 +411,8 @@ const App = (() => {
 
     /* Bracket tables */
     renderBracketTable("fedBracketBody", r.fedTaxableIncome, r.fedBrackets);
-    renderBracketTable("nysBracketBody", r.nysTaxableIncome, r.nysBrackets);
-    if (r.nycBrackets) renderBracketTable("nycBracketBody", r.nycTaxableIncome, r.nycBrackets);
+    renderBracketTable("stateBracketBody", r.stateTaxableIncome, r.stateBrackets);
+    if (r.cityBrackets) renderBracketTable("cityBracketBody", r.cityTaxableIncome, r.cityBrackets);
 
     /* MACRS table */
     renderMACRS(r);
@@ -344,7 +437,7 @@ const App = (() => {
     const tbody = document.getElementById("macrsBody");
     if (!tbody) return;
     if (!r.macrs || r.macrs.rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted)">No NY add-back — no MACRS recovery needed</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted)">No state add-back — no MACRS recovery needed</td></tr>';
       return;
     }
     tbody.innerHTML = r.macrs.rows.map(row =>
@@ -373,6 +466,7 @@ const App = (() => {
     const summaryData = [
       ["TaxShield Pro — Tax Summary", "", "", ""],
       ["Filing Status", r.filingStatus],
+      ["State", currentStateConfig ? currentStateConfig.name : ""],
       ["Gross Income", r.grossIncome],
       [""],
       ["Year 1 Tax (with strategies)", r.totalTax],
@@ -415,7 +509,6 @@ const App = (() => {
       e.preventDefault();
       const email = document.getElementById("emailInput")?.value;
       if (email && email.includes("@")) {
-        // In production, send to backend
         console.log("Email captured:", email);
         startTrial();
         const gate = document.getElementById("premiumGate");
@@ -433,6 +526,7 @@ const App = (() => {
     initTheme();
     initTrial();
     initNumInputs();
+    initStateSelector();
     initFilingStatus();
     initDeductionType();
     initEmailGate();
@@ -456,7 +550,6 @@ const App = (() => {
         detailBtn.textContent = open ? "Details ▾" : "Details ▴";
       });
     }
-
 
     // Export button
     const exportBtn = document.getElementById("exportExcel");

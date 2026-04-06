@@ -56,11 +56,11 @@ const TaxEngine = (() => {
   /* ── MACRS 5-year half-year convention ── */
   const MACRS_RATES = [0.20, 0.32, 0.192, 0.1152, 0.1152, 0.0576];
 
-  function macrsSchedule(basis, margNYS, margNYC, discountRate = 0.05) {
+  function macrsSchedule(basis, margState, margCity, discountRate = 0.05) {
     let npv = 0;
     const rows = MACRS_RATES.map((r, i) => {
       const dep = basis * r;
-      const savings = dep * (margNYS + margNYC);
+      const savings = dep * (margState + margCity);
       const pv = savings / Math.pow(1 + discountRate, i);
       npv += pv;
       return { year: i + 1, rate: r, depreciation: dep, savings, pv };
@@ -76,6 +76,7 @@ const TaxEngine = (() => {
     const b = stateConfig.brackets[fs];
     if (!b) throw new Error(`Unknown filing status: ${fs}`);
 
+    const feat = stateConfig.features || {};
     const salary = inputs.salary || 0;
     const spouseSalary = (fs === "MFS") ? (inputs.spouseSalary || 0) : 0;
     const otherIncome = inputs.otherIncome || 0;
@@ -146,9 +147,10 @@ const TaxEngine = (() => {
     const fedDeduction = (dedType === "STANDARD") ? b.fedStd : itemized;
     const usingStandard = dedType === "STANDARD";
 
-    /* ── NYS deduction ── */
-    const nysItemizedMinusSalt = usingStandard ? 0 : Math.max(itemized - saltUsed, 0);
-    const nysDeduction = Math.max(nysItemizedMinusSalt, b.nysStd);
+    /* ── State deduction ── */
+    const stateStd = b.stateStd || 0;
+    const stateItemizedMinusSalt = usingStandard ? 0 : Math.max(itemized - saltUsed, 0);
+    const stateDeduction = Math.max(stateItemizedMinusSalt, stateStd);
 
     /* ── Federal taxable income ── */
     const agi = agiGross - eblTotal;
@@ -160,21 +162,32 @@ const TaxEngine = (() => {
     const itcCarryforward = Math.max(solarITC - fedTaxGross, 0);
     const fedTaxNet = fedTaxGross - itcApplied;
 
-    /* ── NY State ── */
-    const nyAddBack = eblBH + eblSolar; // NY decouples bonus depreciation
-    const filmThru = eblFilm; // Film flows through to NY
-    const nysTaxableIncome = Math.max(agi + nyAddBack - nysDeduction, 0);
+    /* ── State tax ── */
+    const stateAddBack = feat.decouplesBonusDepreciation ? (eblBH + eblSolar) : 0;
+    const filmThru = feat.filmFlowsThrough ? eblFilm : 0;
+    const stateTaxableIncome = Math.max(agi + stateAddBack - stateDeduction, 0);
 
-    /* ── NYC ── */
-    const nycTaxableIncome = nysTaxableIncome; // same base
+    /* ── City tax ── */
+    const cityTaxableIncome = stateTaxableIncome; // same base
 
-    /* ── State/city tax ── */
-    const nysTax = stateConfig.calcStateTax
-      ? stateConfig.calcStateTax(nysTaxableIncome, b)
-      : bracketTax(nysTaxableIncome, b.nys);
-    const nycTax = stateConfig.calcCityTax
-      ? stateConfig.calcCityTax(nycTaxableIncome, b)
-      : (b.nyc ? bracketTax(nycTaxableIncome, b.nyc) : 0);
+    /* ── State/city tax calculation ── */
+    let stateTax = 0;
+    if (!feat.hasNoIncomeTax) {
+      if (stateConfig.calcStateTax) {
+        stateTax = stateConfig.calcStateTax(stateTaxableIncome, b);
+      } else if (feat.flatRate) {
+        stateTax = stateTaxableIncome * feat.flatRate;
+      } else if (b.state) {
+        stateTax = bracketTax(stateTaxableIncome, b.state);
+      }
+    }
+
+    let cityTax = 0;
+    if (stateConfig.calcCityTax) {
+      cityTax = stateConfig.calcCityTax(cityTaxableIncome, b);
+    } else if (b.city) {
+      cityTax = bracketTax(cityTaxableIncome, b.city);
+    }
 
     /* ── FICA ── */
     const fica = calcFICA(salary, b.addMedThreshold);
@@ -183,16 +196,26 @@ const TaxEngine = (() => {
       : { ss: 0, med: 0, addMed: 0, total: 0 };
 
     /* ── Totals ── */
-    const totalTax = fedTaxNet + nysTax + nycTax + fica.total + spouseFica.total;
+    const totalTax = fedTaxNet + stateTax + cityTax + fica.total + spouseFica.total;
 
     /* ── Baseline (no strategies) — standard deductions ── */
     const baseAGI = agiGross;
     const baseFedTaxable = Math.max(baseAGI - b.fedStd, 0);
     const baseFedTax = bracketTax(baseFedTaxable, b.fed);
-    const baseNYSTaxable = Math.max(baseAGI - b.nysStd, 0);
-    const baseNYSTax = bracketTax(baseNYSTaxable, b.nys || []);
-    const baseNYCTax = b.nyc ? bracketTax(baseNYSTaxable, b.nyc) : 0;
-    const baseTotalTax = baseFedTax + baseNYSTax + baseNYCTax + fica.total + spouseFica.total;
+    let baseStateTax = 0;
+    if (!feat.hasNoIncomeTax) {
+      const baseStateTaxable = Math.max(baseAGI - stateStd, 0);
+      if (stateConfig.calcStateTax) {
+        baseStateTax = stateConfig.calcStateTax(baseStateTaxable, b);
+      } else if (feat.flatRate) {
+        baseStateTax = baseStateTaxable * feat.flatRate;
+      } else if (b.state) {
+        baseStateTax = bracketTax(baseStateTaxable, b.state);
+      }
+    }
+    const baseStateTaxable = Math.max(baseAGI - stateStd, 0);
+    const baseCityTax = b.city ? bracketTax(baseStateTaxable, b.city) : 0;
+    const baseTotalTax = baseFedTax + baseStateTax + baseCityTax + fica.total + spouseFica.total;
     const yr1Savings = baseTotalTax - totalTax;
 
     /* ── Year 2 (NOL + recapture) ── */
@@ -210,32 +233,50 @@ const TaxEngine = (() => {
     const yr2FedTax = bracketTax(yr2FedTaxable, b.fed);
     const yr2ITCApplied = Math.min(itcCarryforward, yr2FedTax);
     const yr2FedTaxNet = yr2FedTax - yr2ITCApplied;
-    const yr2NysDed = b.nysStd; // Year 2 uses standard deductions
-    const yr2NYSTaxable = Math.max(yr2AGI - yr2NysDed, 0);
-    const yr2NYSTax = bracketTax(yr2NYSTaxable, b.nys || []);
-    const yr2NYCTax = b.nyc ? bracketTax(yr2NYSTaxable, b.nyc) : 0;
+    const yr2StateDed = stateStd; // Year 2 uses standard deductions
+    const yr2StateTaxable = Math.max(yr2AGI - yr2StateDed, 0);
+    let yr2StateTax = 0;
+    if (!feat.hasNoIncomeTax) {
+      if (stateConfig.calcStateTax) {
+        yr2StateTax = stateConfig.calcStateTax(yr2StateTaxable, b);
+      } else if (feat.flatRate) {
+        yr2StateTax = yr2StateTaxable * feat.flatRate;
+      } else if (b.state) {
+        yr2StateTax = bracketTax(yr2StateTaxable, b.state);
+      }
+    }
+    const yr2CityTax = b.city ? bracketTax(yr2StateTaxable, b.city) : 0;
     const yr2FICA = calcFICA(yr2Salary, b.addMedThreshold);
     const yr2SpouseFICA = (fs === "MFS" && yr2SpouseSalary > 0)
       ? calcFICA(yr2SpouseSalary, b.addMedThreshold)
       : { ss: 0, med: 0, addMed: 0, total: 0 };
-    const yr2TotalTax = yr2FedTaxNet + yr2NYSTax + yr2NYCTax + yr2FICA.total + yr2SpouseFICA.total;
+    const yr2TotalTax = yr2FedTaxNet + yr2StateTax + yr2CityTax + yr2FICA.total + yr2SpouseFICA.total;
 
     /* Year 2 baseline (no strategies, no recapture, no NOL) — standard deductions */
     const yr2BaseGross = yr2Salary + yr2SpouseSalary + yr2OtherIncome;
     const yr2BaseFedTaxable = Math.max(yr2BaseGross - b.fedStd, 0);
     const yr2BaseFedTax = bracketTax(yr2BaseFedTaxable, b.fed);
-    const yr2BaseNYSTaxable = Math.max(yr2BaseGross - b.nysStd, 0);
-    const yr2BaseNYSTax = bracketTax(yr2BaseNYSTaxable, b.nys || []);
-    const yr2BaseNYCTax = b.nyc ? bracketTax(yr2BaseNYSTaxable, b.nyc) : 0;
-    const yr2BaseTotalTax = yr2BaseFedTax + yr2BaseNYSTax + yr2BaseNYCTax + yr2FICA.total + yr2SpouseFICA.total;
+    const yr2BaseStateTaxable = Math.max(yr2BaseGross - stateStd, 0);
+    let yr2BaseStateTax = 0;
+    if (!feat.hasNoIncomeTax) {
+      if (stateConfig.calcStateTax) {
+        yr2BaseStateTax = stateConfig.calcStateTax(yr2BaseStateTaxable, b);
+      } else if (feat.flatRate) {
+        yr2BaseStateTax = yr2BaseStateTaxable * feat.flatRate;
+      } else if (b.state) {
+        yr2BaseStateTax = bracketTax(yr2BaseStateTaxable, b.state);
+      }
+    }
+    const yr2BaseCityTax = b.city ? bracketTax(yr2BaseStateTaxable, b.city) : 0;
+    const yr2BaseTotalTax = yr2BaseFedTax + yr2BaseStateTax + yr2BaseCityTax + yr2FICA.total + yr2SpouseFICA.total;
     const yr2Savings = yr2BaseTotalTax - yr2TotalTax;
 
     /* ── MACRS schedule ── */
-    const macrsBasis = nyAddBack; // BH + Solar portions added back by NY
-    const margNYS = marginalRate(nysTaxableIncome, b.nys || []);
-    const margNYC = b.nyc ? marginalRate(nycTaxableIncome, b.nyc) : 0;
+    const macrsBasis = stateAddBack; // portions added back by state
+    const margState = b.state ? marginalRate(stateTaxableIncome, b.state) : (feat.flatRate || 0);
+    const margCity = b.city ? marginalRate(cityTaxableIncome, b.city) : 0;
     const macrs = macrsBasis > 0
-      ? macrsSchedule(macrsBasis, margNYS, margNYC)
+      ? macrsSchedule(macrsBasis, margState, margCity)
       : { rows: [], npv: 0, totalDep: 0, totalSavings: 0 };
 
     /* ── Combined 2-year ── */
@@ -248,7 +289,7 @@ const TaxEngine = (() => {
       filingStatus: fs, grossIncome, salary, spouseSalary, otherIncome,
 
       // Deductions
-      saltUsed, itemized, fedDeduction, usingStandard, nysDeduction,
+      saltUsed, itemized, fedDeduction, usingStandard, stateDeduction,
 
       // Strategies
       bhOn, bhLoss, filmOn, matPart, filmLoss,
@@ -261,11 +302,11 @@ const TaxEngine = (() => {
       // Federal
       agi, fedTaxableIncome, fedTaxGross, itcApplied, itcCarryforward, fedTaxNet,
 
-      // NY State
-      nyAddBack, filmThru, nysTaxableIncome, nysTax,
+      // State
+      stateAddBack, filmThru, stateTaxableIncome, stateTax,
 
-      // NYC
-      nycTaxableIncome, nycTax,
+      // City
+      cityTaxableIncome, cityTax,
 
       // FICA
       fica, spouseFica,
@@ -276,18 +317,18 @@ const TaxEngine = (() => {
       // Year 2
       solarRecapture, yr2Gross, yr2NOLApplied, yr2NOLRemaining, yr2AGI,
       yr2FedTaxable, yr2FedTax, yr2FedTaxNet, yr2ITCApplied,
-      yr2NYSTaxable, yr2NYSTax, yr2NYCTax, yr2FICA, yr2SpouseFICA,
+      yr2StateTaxable, yr2StateTax, yr2CityTax, yr2FICA, yr2SpouseFICA,
       yr2TotalTax, yr2BaseTotalTax, yr2Savings,
 
       // MACRS
-      macrs, macrsBasis, margNYS, margNYC,
+      macrs, macrsBasis, margState, margCity,
 
       // Combined
       combined2YrSavings, totalCashInvested, roi,
 
       // Bracket detail (for tables)
-      fedBrackets: b.fed, nysBrackets: b.nys, nycBrackets: b.nyc,
-      fedStd: b.fedStd, nysStd: b.nysStd
+      fedBrackets: b.fed, stateBrackets: b.state, cityBrackets: b.city,
+      fedStd: b.fedStd, stateStd: stateStd
     };
   }
 

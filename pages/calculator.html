@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tax Calculator — TaxShield Pro</title>
-  <meta name="description" content="Free NYC tax calculator for Federal + NYS + NYC. Supports MFJ, Single, MFS filing statuses with interactive bracket tables.">
+  <meta name="description" content="Free income tax calculator for Federal + State + City. All 50 states + DC. Supports MFJ, Single, MFS filing statuses with interactive bracket tables.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
@@ -34,8 +34,9 @@
     <div class="container" style="max-width:1400px">
       <div class="calc-wrapper">
         <div class="calc-header">
-          <h2>NYC Income Tax Calculator 2026</h2>
-          <div style="display:flex;gap:8px;align-items:center">
+          <h2>Income Tax Calculator 2026</h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="stateSelector" style="width:auto;color:#fff;background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3)"></select>
             <select id="filingStatus" style="width:auto;color:#fff;background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3)">
               <option value="MFJ">Married Filing Jointly</option>
               <option value="S">Single</option>
@@ -165,8 +166,8 @@
                 <span class="label">Film §181 Loss</span>
                 <span class="value" id="outFilmLoss">$0</span>
               </div>
-              <div class="row" style="font-size:11px;color:var(--accent)">
-                <span class="label">✓ Flows through to NY — no add-back</span>
+              <div class="row" id="filmFlowNote" style="font-size:11px;color:var(--accent)">
+                <span class="label">✓ Flows through to state — no add-back</span>
               </div>
             </div>
 
@@ -248,8 +249,8 @@
               <span class="value" id="outFedTaxable">$0</span>
             </div>
             <div class="row result">
-              <span class="label">NYS/NYC Taxable Income</span>
-              <span class="value" id="outNYSTaxable">$0</span>
+              <span class="label">State Taxable Income</span>
+              <span class="value" id="outStateTaxable">$0</span>
             </div>
           </div>
 
@@ -308,24 +309,28 @@
               <span class="value" id="outFedTaxNet">$0</span>
             </div>
 
-            <h4>New York State</h4>
-            <div class="row premium-only" style="display:none">
-              <span class="label">NY Add-Back (BH + Solar)</span>
-              <span class="value" id="outNYAddBack">$0</span>
-            </div>
-            <div class="row">
-              <span class="label">NYS Taxable Income</span>
-              <span class="value" id="outNYSTaxable">$0</span>
-            </div>
-            <div class="row result">
-              <span class="label">NYS Tax</span>
-              <span class="value" id="outNYSTax">$0</span>
+            <div id="stateAddBackSection">
+              <h4 id="stateTaxLabel">State Tax</h4>
+              <div class="row premium-only" style="display:none">
+                <span class="label">State Add-Back (BH + Solar)</span>
+                <span class="value" id="outStateAddBack">$0</span>
+              </div>
+              <div class="row">
+                <span class="label">State Taxable Income</span>
+                <span class="value" id="outStateTaxResult">$0</span>
+              </div>
+              <div class="row result">
+                <span class="label" id="stateTaxResultLabel">State Tax</span>
+                <span class="value" id="outStateTax">$0</span>
+              </div>
             </div>
 
-            <h4>NYC</h4>
-            <div class="row result">
-              <span class="label">NYC Tax</span>
-              <span class="value" id="outNYCTax">$0</span>
+            <div id="cityTaxSection">
+              <h4 id="cityTaxLabel">City Tax</h4>
+              <div class="row result">
+                <span class="label" id="cityTaxResultLabel">City Tax</span>
+                <span class="value" id="outCityTax">$0</span>
+              </div>
             </div>
 
             <h4>FICA</h4>
@@ -440,32 +445,32 @@
             </table>
           </div>
 
-          <div class="calc-card">
-            <h3>📊 New York State Brackets</h3>
+          <div class="calc-card" id="stateBracketSection">
+            <h3 id="stateBracketLabel">📊 State Tax Brackets</h3>
             <table class="data-table">
               <thead>
                 <tr><th>From</th><th>To</th><th>Rate</th><th>Taxable</th><th>Tax</th><th>Cumulative</th></tr>
               </thead>
-              <tbody id="nysBracketBody"></tbody>
+              <tbody id="stateBracketBody"></tbody>
             </table>
           </div>
 
-          <div class="calc-card">
-            <h3>📊 NYC Brackets</h3>
+          <div class="calc-card" id="cityBracketSection">
+            <h3 id="cityBracketLabel">📊 City Tax Brackets</h3>
             <table class="data-table">
               <thead>
                 <tr><th>From</th><th>To</th><th>Rate</th><th>Taxable</th><th>Tax</th><th>Cumulative</th></tr>
               </thead>
-              <tbody id="nycBracketBody"></tbody>
+              <tbody id="cityBracketBody"></tbody>
             </table>
           </div>
 
           <!-- ═══ MACRS SCHEDULE (PREMIUM) ═══ -->
-          <div class="premium-only" style="display:none">
+          <div class="premium-only" id="macrsSection" style="display:none">
             <div class="calc-card">
-              <h3>🏗️ NY MACRS Depreciation Recovery (5-Year)</h3>
+              <h3>🏗️ MACRS Depreciation Recovery (5-Year)</h3>
               <p style="font-size:12px;color:var(--muted);margin-bottom:12px">
-                NY add-back of BH + Solar losses recovered via half-year convention MACRS over 6 years.
+                State add-back of BH + Solar losses recovered via half-year convention MACRS over 6 years.
               </p>
               <table class="data-table">
                 <thead>
@@ -504,8 +509,9 @@
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="../js/states/ny.js?v=6"></script>
-  <script src="../js/calc-engine.js?v=6"></script>
-  <script src="../js/app.js?v=6"></script>
+  <script src="../js/states/ny.js?v=7"></script>
+  <script src="../js/states/registry.js?v=7"></script>
+  <script src="../js/calc-engine.js?v=7"></script>
+  <script src="../js/app.js?v=7"></script>
 </body>
 </html>
