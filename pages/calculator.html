@@ -97,9 +97,77 @@
                     <select id="charMode" style="width:auto;font-size:12px"><option value="MAX">Max 60% AGI</option><option value="CUSTOM">Custom</option></select>
                   </div>
                 </div>
-                <div style="margin-top:8px;text-align:right">
-                  <button class="btn btn-sm btn-outline" id="strategyDetailToggle">Details ▾</button>
-                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ STRATEGY TABLE (premium, always visible when strategy mode on) ═══ -->
+          <div class="premium-only" style="display:none">
+            <div class="calc-card" id="strategyTable" style="overflow-x:auto">
+              <table class="data-table strategy-grid" style="width:100%;font-size:13px">
+                <thead>
+                  <tr>
+                    <th style="text-align:left;width:140px"></th>
+                    <th>🏠 Box House</th>
+                    <th>🎬 Film §181</th>
+                    <th>☀️ Solar ITC</th>
+                    <th>💝 Charitable</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="font-weight:600">Cash / Equity</td>
+                    <td><input type="text" inputmode="decimal" class="num-input" id="bhCash" value="130,000" style="width:100px"></td>
+                    <td><input type="text" inputmode="decimal" class="num-input" id="filmCash" value="100,000" style="width:100px"></td>
+                    <td><input type="text" inputmode="decimal" class="num-input" id="solarEquity" value="77,000" style="width:100px"></td>
+                    <td><span id="outCharCash">$0</span></td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight:600">Leverage</td>
+                    <td><input type="text" inputmode="decimal" class="num-input" id="bhLeverage" value="5" style="width:60px"></td>
+                    <td><input type="text" inputmode="decimal" class="num-input" id="filmLeverage" value="5" style="width:60px"></td>
+                    <td><input type="text" inputmode="decimal" class="num-input" id="solarLeverage" value="2.66" style="width:60px"></td>
+                    <td><input type="text" inputmode="decimal" class="num-input" id="charLevLeverage" value="6" style="width:60px"></td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight:600">Asset / Donation</td>
+                    <td><span id="outBHLoss">$0</span></td>
+                    <td><span id="outFilmLoss">$0</span></td>
+                    <td><span id="outSolarAsset" style="color:var(--info)">$0</span></td>
+                    <td><span id="outCharDonation">$0</span></td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight:600">ITC Rate</td>
+                    <td></td>
+                    <td></td>
+                    <td><input type="text" inputmode="decimal" class="num-input" id="solarITCRate" value="36" style="width:50px"><span style="font-size:11px;color:var(--muted)">%</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight:600">ITC / Credit</td>
+                    <td></td>
+                    <td></td>
+                    <td><span id="outSolarITC" style="color:var(--info)">$0</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight:600">Depr. Basis</td>
+                    <td></td>
+                    <td></td>
+                    <td><span id="outSolarBasis">$0</span></td>
+                    <td></td>
+                  </tr>
+                  <tr style="border-top:2px solid var(--primary);font-weight:700">
+                    <td style="font-weight:700">Yr1 Loss</td>
+                    <td><span id="outBHLossTotal">$0</span></td>
+                    <td><span id="outFilmLossTotal">$0</span></td>
+                    <td><span id="outSolarLoss" style="color:var(--info)">$0</span></td>
+                    <td><span id="outCharDeductionTotal">$0</span></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div id="filmFlowNote" style="font-size:11px;color:var(--accent);margin-top:6px">
+                ✓ Film §181 flows through to state — no add-back
               </div>
             </div>
           </div>
@@ -133,96 +201,6 @@
             <div class="row result">
               <span class="label">Gross Income</span>
               <span class="value" id="outGross">$1,300,000</span>
-            </div>
-          </div>
-
-          <!-- ═══ STRATEGY DETAILS (collapsible, premium) ═══ -->
-          <div class="premium-only strategy-details" id="strategyDetails" style="display:none">
-            <div class="calc-card">
-              <h3>🏠 Box House</h3>
-              <div class="row">
-                <span class="label">Cash Investment</span>
-                <input type="text" inputmode="decimal" class="num-input" id="bhCash" value="130,000">
-              </div>
-              <div class="row">
-                <span class="label">Leverage Multiple</span>
-                <input type="text" inputmode="decimal" class="num-input" id="bhLeverage" value="5" style="width:60px">
-              </div>
-              <div class="sep"></div>
-              <div class="row result">
-                <span class="label">Box House Loss</span>
-                <span class="value" id="outBHLoss">$0</span>
-              </div>
-            </div>
-
-            <div class="calc-card">
-              <h3>🎬 Film §181</h3>
-              <div class="row">
-                <span class="label">Film Cash</span>
-                <input type="text" inputmode="decimal" class="num-input" id="filmCash" value="100,000">
-              </div>
-              <div class="row">
-                <span class="label">Film Leverage</span>
-                <input type="text" inputmode="decimal" class="num-input" id="filmLeverage" value="5" style="width:60px">
-              </div>
-              <div class="sep"></div>
-              <div class="row result film">
-                <span class="label">Film §181 Loss</span>
-                <span class="value" id="outFilmLoss">$0</span>
-              </div>
-              <div class="row" id="filmFlowNote" style="font-size:11px;color:var(--accent)">
-                <span class="label">✓ Flows through to state — no add-back</span>
-              </div>
-            </div>
-
-            <div class="calc-card">
-              <h3>☀️ Solar ITC</h3>
-              <div class="row">
-                <span class="label">Solar Equity</span>
-                <input type="text" inputmode="decimal" class="num-input" id="solarEquity" value="77,000">
-              </div>
-              <div class="row">
-                <span class="label">Solar Leverage</span>
-                <input type="text" inputmode="decimal" class="num-input" id="solarLeverage" value="2.66" style="width:60px">
-              </div>
-              <div class="row solar">
-                <span class="label">Solar Asset Price</span>
-                <span class="value blue" id="outSolarAsset">$0</span>
-              </div>
-              <div class="row">
-                <span class="label">ITC Rate (%)</span>
-                <input type="text" inputmode="decimal" class="num-input" id="solarITCRate" value="36" style="width:60px">
-              </div>
-              <div class="row solar">
-                <span class="label">Solar ITC (direct credit)</span>
-                <span class="value blue" id="outSolarITC">$0</span>
-              </div>
-              <div class="row solar">
-                <span class="label">Depreciable Basis</span>
-                <span class="value" id="outSolarBasis">$0</span>
-              </div>
-              <div class="sep"></div>
-              <div class="row result solar">
-                <span class="label">Solar Net Yr1 Loss</span>
-                <span class="value blue" id="outSolarLoss">$0</span>
-              </div>
-            </div>
-
-            <div class="calc-card">
-              <h3>💝 Leveraged Charitable</h3>
-              <div class="row">
-                <span class="label">Charitable Leverage</span>
-                <input type="text" inputmode="decimal" class="num-input" id="charLevLeverage" value="6" style="width:60px">
-              </div>
-              <div class="row">
-                <span class="label">Cash Donation</span>
-                <span class="value" id="outCharCash">$0</span>
-              </div>
-              <div class="sep"></div>
-              <div class="row result">
-                <span class="label">Charitable Deduction</span>
-                <span class="value" id="outCharDonation">$0</span>
-              </div>
             </div>
           </div>
 

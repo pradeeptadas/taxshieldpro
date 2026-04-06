@@ -310,10 +310,8 @@ const App = (() => {
     // Update strategy toggles UI based on master toggle
     const stratToggles = document.getElementById("strategyToggles");
     if (stratToggles) stratToggles.style.opacity = stratOn ? "1" : "0.4";
-    const detBtn = document.getElementById("strategyDetailToggle");
-    if (detBtn) detBtn.style.display = stratOn ? "" : "none";
-    const detPanel = document.getElementById("strategyDetails");
-    if (detPanel && !stratOn) detPanel.style.display = "none";
+    const stratTable = document.getElementById("strategyTable");
+    if (stratTable) stratTable.style.display = stratOn ? "" : "none";
     const dedEl = document.getElementById("dedType");
     if (dedEl) {
       if (!stratOn) dedEl.value = "STANDARD";
@@ -395,13 +393,16 @@ const App = (() => {
 
     /* Strategies */
     set("outBHLoss", fmt(r.bhLoss));
+    set("outBHLossTotal", fmt(r.bhLoss));
     set("outFilmLoss", fmt(r.filmLoss));
+    set("outFilmLossTotal", fmt(r.filmLoss));
     set("outSolarAsset", fmt(r.solarAsset));
     set("outSolarITC", fmt(r.solarITC));
     set("outSolarBasis", fmt(r.solarBasis));
     set("outSolarLoss", fmt(r.solarLoss));
     set("outCharCash", fmt(r.charCash));
     set("outCharDonation", fmt(r.charDonation));
+    set("outCharDeductionTotal", fmt(r.charDonation));
 
     /* EBL */
     set("outEBLFilm", fmt(r.eblFilm));
@@ -570,17 +571,6 @@ const App = (() => {
         el._debounce = setTimeout(recalculate, 300);
       });
     });
-
-    // Strategy details toggle
-    const detailBtn = document.getElementById("strategyDetailToggle");
-    const detailPanel = document.getElementById("strategyDetails");
-    if (detailBtn && detailPanel) {
-      detailBtn.addEventListener("click", () => {
-        const open = detailPanel.style.display !== "none";
-        detailPanel.style.display = open ? "none" : "";
-        detailBtn.textContent = open ? "Details ▾" : "Details ▴";
-      });
-    }
 
     // Export button
     const exportBtn = document.getElementById("exportExcel");
