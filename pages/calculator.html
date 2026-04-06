@@ -142,6 +142,13 @@
                       <td><span id="outSolarBasis">$0</span></td>
                       <td></td>
                     </tr>
+                    <tr>
+                      <td style="font-weight:600">MACRS Years</td>
+                      <td></td>
+                      <td></td>
+                      <td><input type="text" inputmode="decimal" class="num-input" id="macrsYears" value="6" style="width:50px"><span style="font-size:11px;color:var(--muted)">yrs</span></td>
+                      <td></td>
+                    </tr>
                     <tr style="border-top:2px solid var(--primary);font-weight:700">
                       <td style="font-weight:700">Yr1 Loss</td>
                       <td><span id="outBHLossTotal">$0</span></td>
@@ -151,9 +158,6 @@
                     </tr>
                   </tbody>
                 </table>
-                <div id="filmFlowNote" style="font-size:11px;color:var(--accent);margin-top:6px">
-                  ✓ Film §181 flows through to state — no add-back
-                </div>
               </div>
             </div>
           </div>
@@ -329,54 +333,77 @@
 
           <!-- ═══ YEAR 2 (PREMIUM) ═══ -->
           <div class="premium-only" style="display:none">
-            <div class="calc-card">
-              <h3>📅 Year 2 Analysis (NOL + Recapture)</h3>
-              <div class="row">
-                <span class="label">Year 2 Salary</span>
-                <input type="text" inputmode="decimal" class="num-input" id="yr2Salary" value="" placeholder="Same as Year 1">
-              </div>
-              <div class="row" id="yr2SpouseRow" style="display:none">
-                <span class="label">Year 2 Spouse Salary</span>
-                <input type="text" inputmode="decimal" class="num-input" id="yr2SpouseSalary" value="" placeholder="Same">
-              </div>
-              <div class="row">
-                <span class="label">Year 2 Other Income</span>
-                <input type="text" inputmode="decimal" class="num-input" id="yr2OtherIncome" value="0">
-              </div>
-              <div class="row">
-                <span class="label">Solar Recapture Rate (%)</span>
-                <input type="text" inputmode="decimal" class="num-input" id="solarRecaptureRate" value="30" style="width:60px">
-              </div>
-              <div class="sep"></div>
-              <div class="row">
-                <span class="label">Solar Recapture Income</span>
-                <span class="value" id="outSolarRecapture">$0</span>
-              </div>
-              <div class="row result">
-                <span class="label">Year 2 Gross Income</span>
-                <span class="value" id="outYr2Gross">$0</span>
-              </div>
-              <div class="row nol">
-                <span class="label">NOL Applied (offsets ALL income)</span>
-                <span class="value pos" id="outYr2NOL">$0</span>
-              </div>
-              <div class="row result">
-                <span class="label">Year 2 AGI</span>
-                <span class="value" id="outYr2AGI">$0</span>
-              </div>
-              <div class="sep"></div>
-              <div class="row">
-                <span class="label">Year 2 Tax (with NOL)</span>
-                <span class="value" id="outYr2Tax">$0</span>
-              </div>
-              <div class="row">
-                <span class="label">Year 2 Tax (no strategies)</span>
-                <span class="value" id="outYr2BaseTax">$0</span>
-              </div>
-              <div class="row savings">
-                <span class="label">Year 2 Savings</span>
-                <span class="value pos" id="outYr2Savings">$0</span>
-              </div>
+            <div class="calc-card" style="overflow-x:auto">
+              <h3>📅 Multi-Year Benefits</h3>
+              <table class="data-table" style="width:100%;font-size:13px">
+                <thead>
+                  <tr>
+                    <th style="text-align:left;width:200px"></th>
+                    <th style="text-align:center">Year 1</th>
+                    <th style="text-align:center">Year 2</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="font-weight:600">Salary</td>
+                    <td style="text-align:center" id="outYr1SalaryCol">$0</td>
+                    <td><input type="text" inputmode="decimal" class="num-input" id="yr2Salary" value="" placeholder="Same as Yr1" style="width:110px"></td>
+                  </tr>
+                  <tr id="yr2SpouseRow" style="display:none">
+                    <td style="font-weight:600">Spouse Salary</td>
+                    <td style="text-align:center" id="outYr1SpouseSalaryCol">$0</td>
+                    <td><input type="text" inputmode="decimal" class="num-input" id="yr2SpouseSalary" value="" placeholder="Same" style="width:110px"></td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight:600">Other Income</td>
+                    <td style="text-align:center" id="outYr1OtherIncomeCol">$0</td>
+                    <td><input type="text" inputmode="decimal" class="num-input" id="yr2OtherIncome" value="0" style="width:110px"></td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight:600">Solar Recapture</td>
+                    <td style="text-align:center;color:var(--muted)">—</td>
+                    <td style="text-align:center"><span id="outSolarRecapture">$0</span>
+                      <span style="font-size:11px;color:var(--muted);margin-left:4px">@</span>
+                      <input type="text" inputmode="decimal" class="num-input" id="solarRecaptureRate" value="30" style="width:40px"><span style="font-size:11px;color:var(--muted)">%</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight:600">NOL Applied</td>
+                    <td style="text-align:center;color:var(--muted)">—</td>
+                    <td style="text-align:center;color:var(--accent)" id="outYr2NOL">$0</td>
+                  </tr>
+                  <tr id="yr2MacrsRow">
+                    <td style="font-weight:600">State MACRS Recovery</td>
+                    <td style="text-align:center" id="outYr1MACRS">$0</td>
+                    <td style="text-align:center" id="outYr2MACRS">$0</td>
+                  </tr>
+                  <tr style="border-top:2px solid var(--border)">
+                    <td style="font-weight:600">Gross Income</td>
+                    <td style="text-align:center" id="outYr1GrossCol">$0</td>
+                    <td style="text-align:center" id="outYr2Gross">$0</td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight:600">AGI</td>
+                    <td style="text-align:center" id="outYr1AGICol">$0</td>
+                    <td style="text-align:center" id="outYr2AGI">$0</td>
+                  </tr>
+                  <tr style="border-top:2px solid var(--primary);font-weight:700">
+                    <td>Tax (with strategies)</td>
+                    <td style="text-align:center" id="outYr1TaxCol">$0</td>
+                    <td style="text-align:center" id="outYr2Tax">$0</td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight:600">Tax (no strategies)</td>
+                    <td style="text-align:center" id="outYr1BaseTaxCol">$0</td>
+                    <td style="text-align:center" id="outYr2BaseTax">$0</td>
+                  </tr>
+                  <tr class="savings" style="font-weight:700">
+                    <td>Savings</td>
+                    <td style="text-align:center" id="outYr1SavingsCol">$0</td>
+                    <td style="text-align:center" id="outYr2Savings">$0</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 

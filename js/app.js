@@ -229,9 +229,13 @@ const App = (() => {
     const macrsSection = document.getElementById("macrsSection");
     if (macrsSection) macrsSection.style.display = feat.decouplesBonusDepreciation ? "" : "none";
 
-    // Film flow-through note
-    const filmNote = document.getElementById("filmFlowNote");
-    if (filmNote) filmNote.style.display = feat.filmFlowsThrough ? "" : "none";
+    // MACRS years default: 6 for decoupling states, 0 for bonus-dep states
+    const macrsYearsEl = document.getElementById("macrsYears");
+    if (macrsYearsEl) macrsYearsEl.value = feat.decouplesBonusDepreciation ? 6 : 0;
+
+    // Show/hide Year 2 MACRS row
+    const yr2MacrsRow = document.getElementById("yr2MacrsRow");
+    if (yr2MacrsRow) yr2MacrsRow.style.display = feat.decouplesBonusDepreciation ? "" : "none";
 
     // Update EBL display
     const fs = document.getElementById("filingStatus")?.value || "MFJ";
@@ -312,8 +316,6 @@ const App = (() => {
     if (stratTable) stratTable.style.display = stratOn ? "" : "none";
     const dedContainer = document.getElementById("dedTypeContainer");
     if (dedContainer) dedContainer.style.display = stratOn ? "" : "none";
-    const filmNote = document.getElementById("filmFlowNote");
-    if (filmNote) filmNote.style.display = stratOn ? "" : "none";
     const dedEl = document.getElementById("dedType");
     if (dedEl) {
       if (!stratOn) dedEl.value = "STANDARD";
@@ -357,7 +359,8 @@ const App = (() => {
       yr2Salary: V("yr2Salary") || V("salary"),
       yr2SpouseSalary: V("yr2SpouseSalary") || V("spouseSalary"),
       yr2OtherIncome: V("yr2OtherIncome"),
-      solarRecaptureRate: V("solarRecaptureRate") / 100 || 0.30
+      solarRecaptureRate: V("solarRecaptureRate") / 100 || 0.30,
+      macrsYears: isPremium && stratOn ? (V("macrsYears") || 0) : 0
     };
 
     currentStateConfig = getSelectedConfig();
@@ -429,7 +432,15 @@ const App = (() => {
     set("outBaseTax", fmt(r.baseTotalTax));
     set("outYr1Savings", fmt(r.yr1Savings));
 
-    /* Year 2 */
+    /* Multi-year table */
+    set("outYr1SalaryCol", fmt(r.salary + r.spouseSalary));
+    set("outYr1SpouseSalaryCol", fmt(r.spouseSalary));
+    set("outYr1OtherIncomeCol", fmt(r.otherIncome));
+    set("outYr1GrossCol", fmt(r.grossIncome));
+    set("outYr1AGICol", fmt(r.agi));
+    set("outYr1TaxCol", fmt(r.totalTax));
+    set("outYr1BaseTaxCol", fmt(r.baseTotalTax));
+    set("outYr1SavingsCol", fmt(r.yr1Savings));
     set("outYr2Gross", fmt(r.yr2Gross));
     set("outSolarRecapture", fmt(r.solarRecapture));
     set("outYr2NOL", fmt(r.yr2NOLApplied));
@@ -437,6 +448,14 @@ const App = (() => {
     set("outYr2Tax", fmt(r.yr2TotalTax));
     set("outYr2BaseTax", fmt(r.yr2BaseTotalTax));
     set("outYr2Savings", fmt(r.yr2Savings));
+    // MACRS recovery per year
+    if (r.macrs && r.macrs.rows.length > 0) {
+      set("outYr1MACRS", fmt(r.macrs.rows[0] ? r.macrs.rows[0].savings : 0));
+      set("outYr2MACRS", fmt(r.macrs.rows[1] ? r.macrs.rows[1].savings : 0));
+    } else {
+      set("outYr1MACRS", "$0");
+      set("outYr2MACRS", "$0");
+    }
 
     /* Combined */
     set("outCombinedSavings", fmt(r.combined2YrSavings));
