@@ -217,7 +217,11 @@ const App = (() => {
     const citySection = document.getElementById("cityTaxSection");
     if (citySection) citySection.style.display = cityOn ? "" : "none";
 
-    // Show/hide state add-back section
+    // Show/hide state tax section (hide for no-income-tax states)
+    const stateTaxSec = document.getElementById("stateTaxSection");
+    if (stateTaxSec) stateTaxSec.style.display = feat.hasNoIncomeTax ? "none" : "";
+
+    // Show/hide state add-back row
     const addBackSection = document.getElementById("stateAddBackSection");
     if (addBackSection) addBackSection.style.display = feat.decouplesBonusDepreciation ? "" : "none";
 
