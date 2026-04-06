@@ -169,12 +169,12 @@ test("Total Tax (Year 1) = $67,885", () => {
 });
 
 // --- Savings ---
-test("Base Tax (no strategies) = $558,551", () => {
-  assertClose(r.baseTotalTax, 558551, "baseTotalTax", 2);
+test("Base Tax (no strategies) = $563,710", () => {
+  assertClose(r.baseTotalTax, 563710, "baseTotalTax", 2);
 });
 
-test("Year 1 Savings = $490,666", () => {
-  assertClose(r.yr1Savings, 490666, "yr1Savings", 2);
+test("Year 1 Savings = $495,825", () => {
+  assertClose(r.yr1Savings, 495825, "yr1Savings", 2);
 });
 
 // --- Cash Outlay ---
@@ -203,12 +203,12 @@ test("AGI = $1,300,000 (no strategies)", () => {
   assertClose(ns.agi, 1300000, "agi");
 });
 
-test("Total Tax close to base tax (~$563,710)", () => {
-  assertClose(ns.totalTax, 563710, "totalTax", 500);
+test("Total Tax = base tax = $563,710 (no strategies)", () => {
+  assertClose(ns.totalTax, 563710, "totalTax", 2);
 });
 
-test("Year 1 Savings ~= $0", () => {
-  assertClose(ns.yr1Savings, 0, "yr1Savings", 500);
+test("Year 1 Savings = $0 (no strategies)", () => {
+  assertClose(ns.yr1Savings, 0, "yr1Savings", 2);
 });
 
 // ═══════════════════════════════════════════════════════
@@ -342,20 +342,20 @@ test("Year 2 NOL = 0 when no strategies", () => {
   assertClose(ns.yr2NOLApplied, 0, "yr2NOLApplied");
 });
 
-test("Year 2 savings ~= $0 when no strategies", () => {
-  assertClose(ns.yr2Savings, 0, "yr2Savings", 500);
+test("Year 2 savings = $0 when no strategies", () => {
+  assertClose(ns.yr2Savings, 0, "yr2Savings", 2);
 });
 
-test("Year 2 total tax ~= Year 2 base tax when no strategies", () => {
-  assertClose(ns.yr2TotalTax, ns.yr2BaseTotalTax, "yr2TotalTax vs yr2BaseTotalTax", 500);
+test("Year 2 total tax = Year 2 base tax when no strategies", () => {
+  assertClose(ns.yr2TotalTax, ns.yr2BaseTotalTax, "yr2TotalTax vs yr2BaseTotalTax", 2);
 });
 
 test("Total cash invested = $0 when no strategies", () => {
   assertClose(ns.totalCashInvested, 0, "totalCashInvested");
 });
 
-test("Combined 2-year savings ~= $0 when no strategies", () => {
-  assertClose(ns.combined2YrSavings, 0, "combined2YrSavings", 1000);
+test("Combined 2-year savings = $0 when no strategies", () => {
+  assertClose(ns.combined2YrSavings, 0, "combined2YrSavings", 2);
 });
 
 // ═══════════════════════════════════════════════════════

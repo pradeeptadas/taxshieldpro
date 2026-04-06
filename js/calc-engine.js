@@ -142,18 +142,14 @@ const TaxEngine = (() => {
     const otherDeductions = inputs.otherDeductions || 0;
     const saltCap = stateConfig.saltCap || 25000;
     const saltUsed = Math.min(propTax + stateLocal, saltCap);
-    const baseItemized = saltUsed + mortgage + charitableCash + otherDeductions; // no strategy charitable
-    const itemized = baseItemized + charUsed; // with strategy charitable
-    const fedDeduction = (dedType === "STANDARD") ? b.fedStd : itemized;
-    const usingStandard = dedType === "STANDARD";
-
-    /* ── Base (non-strategy) deductions — used for baseline & Year 2 base ── */
-    const baseFedDed = (dedType === "STANDARD") ? b.fedStd : Math.max(baseItemized, b.fedStd);
-    const baseNysItemized = Math.max(baseItemized - saltUsed, 0);
-    const baseNysDed = Math.max(baseNysItemized, b.nysStd);
+    const itemized = saltUsed + mortgage + charitableCash + charUsed + otherDeductions;
+    // Use itemized only when charitable strategy is active; otherwise standard
+    const useItemized = dedType === "ITEMIZED" && charUsed > 0;
+    const fedDeduction = useItemized ? itemized : b.fedStd;
+    const usingStandard = !useItemized;
 
     /* ── NYS deduction ── */
-    const nysItemizedMinusSalt = Math.max(itemized - saltUsed, 0);
+    const nysItemizedMinusSalt = useItemized ? Math.max(itemized - saltUsed, 0) : 0;
     const nysDeduction = Math.max(nysItemizedMinusSalt, b.nysStd);
 
     /* ── Federal taxable income ── */
@@ -191,11 +187,11 @@ const TaxEngine = (() => {
     /* ── Totals ── */
     const totalTax = fedTaxNet + nysTax + nycTax + fica.total + spouseFica.total;
 
-    /* ── Baseline (no strategies) — uses non-strategy deductions ── */
+    /* ── Baseline (no strategies) — standard deductions ── */
     const baseAGI = agiGross;
-    const baseFedTaxable = Math.max(baseAGI - baseFedDed, 0);
+    const baseFedTaxable = Math.max(baseAGI - b.fedStd, 0);
     const baseFedTax = bracketTax(baseFedTaxable, b.fed);
-    const baseNYSTaxable = Math.max(baseAGI - baseNysDed, 0);
+    const baseNYSTaxable = Math.max(baseAGI - b.nysStd, 0);
     const baseNYSTax = bracketTax(baseNYSTaxable, b.nys || []);
     const baseNYCTax = b.nyc ? bracketTax(baseNYSTaxable, b.nyc) : 0;
     const baseTotalTax = baseFedTax + baseNYSTax + baseNYCTax + fica.total + spouseFica.total;
@@ -211,12 +207,12 @@ const TaxEngine = (() => {
     const yr2NOLApplied = Math.min(nolCF, yr2Gross);
     const yr2NOLRemaining = nolCF - yr2NOLApplied;
     const yr2AGI = yr2Gross - yr2NOLApplied;
-    const yr2FedDed = baseFedDed; // Year 2 uses non-strategy deductions
+    const yr2FedDed = b.fedStd; // Year 2 uses standard deductions
     const yr2FedTaxable = Math.max(yr2AGI - yr2FedDed, 0);
     const yr2FedTax = bracketTax(yr2FedTaxable, b.fed);
     const yr2ITCApplied = Math.min(itcCarryforward, yr2FedTax);
     const yr2FedTaxNet = yr2FedTax - yr2ITCApplied;
-    const yr2NysDed = baseNysDed; // Year 2 uses non-strategy deductions
+    const yr2NysDed = b.nysStd; // Year 2 uses standard deductions
     const yr2NYSTaxable = Math.max(yr2AGI - yr2NysDed, 0);
     const yr2NYSTax = bracketTax(yr2NYSTaxable, b.nys || []);
     const yr2NYCTax = b.nyc ? bracketTax(yr2NYSTaxable, b.nyc) : 0;
@@ -226,11 +222,11 @@ const TaxEngine = (() => {
       : { ss: 0, med: 0, addMed: 0, total: 0 };
     const yr2TotalTax = yr2FedTaxNet + yr2NYSTax + yr2NYCTax + yr2FICA.total + yr2SpouseFICA.total;
 
-    /* Year 2 baseline (no strategies, no recapture, no NOL) — non-strategy deductions */
+    /* Year 2 baseline (no strategies, no recapture, no NOL) — standard deductions */
     const yr2BaseGross = yr2Salary + yr2SpouseSalary + yr2OtherIncome;
-    const yr2BaseFedTaxable = Math.max(yr2BaseGross - baseFedDed, 0);
+    const yr2BaseFedTaxable = Math.max(yr2BaseGross - b.fedStd, 0);
     const yr2BaseFedTax = bracketTax(yr2BaseFedTaxable, b.fed);
-    const yr2BaseNYSTaxable = Math.max(yr2BaseGross - baseNysDed, 0);
+    const yr2BaseNYSTaxable = Math.max(yr2BaseGross - b.nysStd, 0);
     const yr2BaseNYSTax = bracketTax(yr2BaseNYSTaxable, b.nys || []);
     const yr2BaseNYCTax = b.nyc ? bracketTax(yr2BaseNYSTaxable, b.nyc) : 0;
     const yr2BaseTotalTax = yr2BaseFedTax + yr2BaseNYSTax + yr2BaseNYCTax + yr2FICA.total + yr2SpouseFICA.total;
