@@ -143,13 +143,11 @@ const TaxEngine = (() => {
     const saltCap = stateConfig.saltCap || 25000;
     const saltUsed = Math.min(propTax + stateLocal, saltCap);
     const itemized = saltUsed + mortgage + charitableCash + charUsed + otherDeductions;
-    // Use itemized only when charitable strategy is active; otherwise standard
-    const useItemized = dedType === "ITEMIZED" && charUsed > 0;
-    const fedDeduction = useItemized ? itemized : b.fedStd;
-    const usingStandard = !useItemized;
+    const fedDeduction = (dedType === "STANDARD") ? b.fedStd : itemized;
+    const usingStandard = dedType === "STANDARD";
 
     /* ── NYS deduction ── */
-    const nysItemizedMinusSalt = useItemized ? Math.max(itemized - saltUsed, 0) : 0;
+    const nysItemizedMinusSalt = usingStandard ? 0 : Math.max(itemized - saltUsed, 0);
     const nysDeduction = Math.max(nysItemizedMinusSalt, b.nysStd);
 
     /* ── Federal taxable income ── */

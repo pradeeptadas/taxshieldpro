@@ -21,7 +21,7 @@ NYC income tax calculator for high-income W-2 earners. Live at https://pradeepta
 6. AGI = `grossIncome - eblTotal` (charitable NOT subtracted from AGI)
 7. Taxes
 8. Base tax uses **standard deductions only** (`b.fedStd`, `b.nysStd`)
-9. Actual tax uses itemized only when `charUsed > 0`; otherwise falls back to standard
+9. NYS deduction uses nysStd when dedType is STANDARD (no itemized bleed-through)
 
 ## Known Pitfalls — NEVER reintroduce
 
@@ -29,7 +29,7 @@ NYC income tax calculator for high-income W-2 earners. Live at https://pradeepta
 - Charitable must NOT be subtracted from AGI
 - Solar loss: `Math.max(solarBasis + 632 - 4264, 0)`
 - Base tax: always uses standard deductions
-- Actual tax: uses itemized only when charitable strategy is active (charUsed > 0), otherwise standard
+- UI forces dedType=STANDARD when strategy mode is off
 - NYS deduction: do NOT add back propTax
 - EBL must be computed BEFORE charitable
 
