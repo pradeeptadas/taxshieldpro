@@ -208,14 +208,14 @@ const App = (() => {
       charitableCash: 0, // charitable now in strategy section
       otherDeductions: V("otherDeductions"),
       // Premium strategies (with on/off)
-      bhOn: isPremium ? selVal("bhOn") === "YES" : false,
+      bhOn: isPremium ? !!document.getElementById("bhOn")?.checked : false,
       bhCash: isPremium ? V("bhCash") : 0,
       bhLeverage: isPremium ? V("bhLeverage") || 5 : 0,
-      filmOn: isPremium ? selVal("filmOn") === "YES" : false,
-      matPart: isPremium ? selVal("matPart") === "YES" : false,
+      filmOn: isPremium ? !!document.getElementById("filmOn")?.checked : false,
+      matPart: isPremium ? !!document.getElementById("matPart")?.checked : false,
       filmCash: isPremium ? V("filmCash") : 0,
       filmLeverage: isPremium ? V("filmLeverage") || 5 : 0,
-      solarOn: isPremium ? selVal("solarOn") === "YES" : false,
+      solarOn: isPremium ? !!document.getElementById("solarOn")?.checked : false,
       solarEquity: isPremium ? V("solarEquity") : 0,
       solarLeverage: isPremium ? V("solarLeverage") || 5 : 0,
       solarITCRate: isPremium ? (V("solarITCRate") / 100 || 0.30) : 0,
