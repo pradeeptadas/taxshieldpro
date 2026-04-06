@@ -64,8 +64,8 @@
               <p style="font-size:11px;margin-top:8px;color:var(--muted)">No credit card required. Full access for 24 hours.</p>
             </div>
             <div class="premium-only" style="display:none">
-              <div class="calc-card strategy-bar">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div class="calc-card" id="strategyTable" style="overflow-x:auto">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
                   <div style="display:flex;align-items:center;gap:10px">
                     <h3 style="margin:0">🎯 Strategy Mode</h3>
                     <label class="toggle"><input type="checkbox" id="strategyMaster" checked><span class="toggle-slider"></span></label>
@@ -75,99 +75,85 @@
                     <select id="dedType" style="width:auto;font-size:12px"><option value="ITEMIZED">Itemized</option><option value="STANDARD">Standard</option></select>
                   </div>
                 </div>
-                <div class="strategy-toggles" id="strategyToggles">
-                  <div class="strategy-toggle-item">
-                    <label class="toggle"><input type="checkbox" id="bhOn" checked><span class="toggle-slider"></span></label>
-                    <span>🏠 Box House</span>
-                  </div>
-                  <div class="strategy-toggle-item">
-                    <label class="toggle"><input type="checkbox" id="filmOn" checked><span class="toggle-slider"></span></label>
-                    <span>🎬 Film §181</span>
-                  </div>
-                  <div class="strategy-toggle-item">
-                    <label class="toggle"><input type="checkbox" id="matPart" checked><span class="toggle-slider"></span></label>
-                    <span style="font-size:11px;color:var(--muted)">Material Participation</span>
-                  </div>
-                  <div class="strategy-toggle-item">
-                    <label class="toggle"><input type="checkbox" id="solarOn" checked><span class="toggle-slider"></span></label>
-                    <span>☀️ Solar ITC</span>
-                  </div>
-                  <div class="strategy-toggle-item">
-                    <span>💝 Charitable</span>
-                    <select id="charMode" style="width:auto;font-size:12px"><option value="MAX">Max 60% AGI</option><option value="CUSTOM">Custom</option></select>
-                  </div>
+                <table class="data-table strategy-grid" id="strategyToggles" style="width:100%;font-size:13px">
+                  <thead>
+                    <tr>
+                      <th style="text-align:left;width:130px"></th>
+                      <th style="text-align:center">
+                        <label class="toggle" style="margin-right:4px"><input type="checkbox" id="bhOn" checked><span class="toggle-slider"></span></label>
+                        🏠 Box House
+                      </th>
+                      <th style="text-align:center">
+                        <label class="toggle" style="margin-right:4px"><input type="checkbox" id="filmOn" checked><span class="toggle-slider"></span></label>
+                        🎬 Film §181
+                      </th>
+                      <th style="text-align:center">
+                        <label class="toggle" style="margin-right:4px"><input type="checkbox" id="solarOn" checked><span class="toggle-slider"></span></label>
+                        ☀️ Solar ITC
+                      </th>
+                      <th style="text-align:center">
+                        💝 Charitable
+                        <select id="charMode" style="width:auto;font-size:11px;margin-left:4px"><option value="MAX">Max 60%</option><option value="CUSTOM">Custom</option></select>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style="font-weight:600">Cash / Equity</td>
+                      <td><input type="text" inputmode="decimal" class="num-input" id="bhCash" value="130,000" style="width:100px"></td>
+                      <td><input type="text" inputmode="decimal" class="num-input" id="filmCash" value="100,000" style="width:100px"></td>
+                      <td><input type="text" inputmode="decimal" class="num-input" id="solarEquity" value="77,000" style="width:100px"></td>
+                      <td><span id="outCharCash">$0</span></td>
+                    </tr>
+                    <tr>
+                      <td style="font-weight:600">Leverage</td>
+                      <td><input type="text" inputmode="decimal" class="num-input" id="bhLeverage" value="5" style="width:60px"></td>
+                      <td><input type="text" inputmode="decimal" class="num-input" id="filmLeverage" value="5" style="width:60px"></td>
+                      <td><input type="text" inputmode="decimal" class="num-input" id="solarLeverage" value="2.66" style="width:60px"></td>
+                      <td><input type="text" inputmode="decimal" class="num-input" id="charLevLeverage" value="6" style="width:60px"></td>
+                    </tr>
+                    <tr>
+                      <td style="font-weight:600">Asset / Donation</td>
+                      <td><span id="outBHLoss">$0</span></td>
+                      <td><span id="outFilmLoss">$0</span></td>
+                      <td><span id="outSolarAsset" style="color:var(--info)">$0</span></td>
+                      <td><span id="outCharDonation">$0</span></td>
+                    </tr>
+                    <tr>
+                      <td style="font-weight:600">ITC Rate</td>
+                      <td></td>
+                      <td style="text-align:center">
+                        <label style="font-size:11px;color:var(--muted);cursor:pointer"><input type="checkbox" id="matPart" checked> Mat. Part.</label>
+                      </td>
+                      <td><input type="text" inputmode="decimal" class="num-input" id="solarITCRate" value="36" style="width:50px"><span style="font-size:11px;color:var(--muted)">%</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td style="font-weight:600">ITC / Credit</td>
+                      <td></td>
+                      <td></td>
+                      <td><span id="outSolarITC" style="color:var(--info)">$0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td style="font-weight:600">Depr. Basis</td>
+                      <td></td>
+                      <td></td>
+                      <td><span id="outSolarBasis">$0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr style="border-top:2px solid var(--primary);font-weight:700">
+                      <td style="font-weight:700">Yr1 Loss</td>
+                      <td><span id="outBHLossTotal">$0</span></td>
+                      <td><span id="outFilmLossTotal">$0</span></td>
+                      <td><span id="outSolarLoss" style="color:var(--info)">$0</span></td>
+                      <td><span id="outCharDeductionTotal">$0</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div id="filmFlowNote" style="font-size:11px;color:var(--accent);margin-top:6px">
+                  ✓ Film §181 flows through to state — no add-back
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ═══ STRATEGY TABLE (premium, always visible when strategy mode on) ═══ -->
-          <div class="premium-only" style="display:none">
-            <div class="calc-card" id="strategyTable" style="overflow-x:auto">
-              <table class="data-table strategy-grid" style="width:100%;font-size:13px">
-                <thead>
-                  <tr>
-                    <th style="text-align:left;width:140px"></th>
-                    <th>🏠 Box House</th>
-                    <th>🎬 Film §181</th>
-                    <th>☀️ Solar ITC</th>
-                    <th>💝 Charitable</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td style="font-weight:600">Cash / Equity</td>
-                    <td><input type="text" inputmode="decimal" class="num-input" id="bhCash" value="130,000" style="width:100px"></td>
-                    <td><input type="text" inputmode="decimal" class="num-input" id="filmCash" value="100,000" style="width:100px"></td>
-                    <td><input type="text" inputmode="decimal" class="num-input" id="solarEquity" value="77,000" style="width:100px"></td>
-                    <td><span id="outCharCash">$0</span></td>
-                  </tr>
-                  <tr>
-                    <td style="font-weight:600">Leverage</td>
-                    <td><input type="text" inputmode="decimal" class="num-input" id="bhLeverage" value="5" style="width:60px"></td>
-                    <td><input type="text" inputmode="decimal" class="num-input" id="filmLeverage" value="5" style="width:60px"></td>
-                    <td><input type="text" inputmode="decimal" class="num-input" id="solarLeverage" value="2.66" style="width:60px"></td>
-                    <td><input type="text" inputmode="decimal" class="num-input" id="charLevLeverage" value="6" style="width:60px"></td>
-                  </tr>
-                  <tr>
-                    <td style="font-weight:600">Asset / Donation</td>
-                    <td><span id="outBHLoss">$0</span></td>
-                    <td><span id="outFilmLoss">$0</span></td>
-                    <td><span id="outSolarAsset" style="color:var(--info)">$0</span></td>
-                    <td><span id="outCharDonation">$0</span></td>
-                  </tr>
-                  <tr>
-                    <td style="font-weight:600">ITC Rate</td>
-                    <td></td>
-                    <td></td>
-                    <td><input type="text" inputmode="decimal" class="num-input" id="solarITCRate" value="36" style="width:50px"><span style="font-size:11px;color:var(--muted)">%</span></td>
-                    <td></td>
-                  </tr>
-                  <tr>
-                    <td style="font-weight:600">ITC / Credit</td>
-                    <td></td>
-                    <td></td>
-                    <td><span id="outSolarITC" style="color:var(--info)">$0</span></td>
-                    <td></td>
-                  </tr>
-                  <tr>
-                    <td style="font-weight:600">Depr. Basis</td>
-                    <td></td>
-                    <td></td>
-                    <td><span id="outSolarBasis">$0</span></td>
-                    <td></td>
-                  </tr>
-                  <tr style="border-top:2px solid var(--primary);font-weight:700">
-                    <td style="font-weight:700">Yr1 Loss</td>
-                    <td><span id="outBHLossTotal">$0</span></td>
-                    <td><span id="outFilmLossTotal">$0</span></td>
-                    <td><span id="outSolarLoss" style="color:var(--info)">$0</span></td>
-                    <td><span id="outCharDeductionTotal">$0</span></td>
-                  </tr>
-                </tbody>
-              </table>
-              <div id="filmFlowNote" style="font-size:11px;color:var(--accent);margin-top:6px">
-                ✓ Film §181 flows through to state — no add-back
               </div>
             </div>
           </div>

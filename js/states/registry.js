@@ -104,14 +104,36 @@ const StateRegistry = (() => {
   configs.IA = makeFlat("IA", "Iowa",           0.038,  2210,  5450);
   configs.ID = makeFlat("ID", "Idaho",          0.05695,14600, 29200);
   configs.IL = makeFlat("IL", "Illinois",       0.0495, 2625,  5250);
-  configs.IN = makeFlat("IN", "Indiana",        0.0305, 0,     0);
-  configs.KY = makeFlat("KY", "Kentucky",       0.04,   3160,  6320);
+  configs.IN = makeConfig("IN", "Indiana", {
+    city: "Indianapolis",
+    features: { flatRate: 0.0305, hasCityTax: true },
+    cityMFJ: [[Infinity,.0162]], cityS: [[Infinity,.0162]],
+    notes: { info: "Marion County (Indianapolis) rate 1.62%. Other IN counties vary 0.5%-2.9%." }
+  });
+  configs.KY = makeConfig("KY", "Kentucky", {
+    city: "Louisville",
+    features: { flatRate: 0.04, hasCityTax: true },
+    stateStdS: 3160, stateStdMFJ: 6320,
+    cityMFJ: [[Infinity,.022]], cityS: [[Infinity,.022]],
+    notes: { info: "Louisville Metro occupational tax 2.20%. Lexington 2.25%." }
+  });
   configs.LA = makeFlat("LA", "Louisiana",      0.03,   12500, 25000);
   configs.MA = makeFlat("MA", "Massachusetts",  0.05,   0,     0);
-  configs.MI = makeFlat("MI", "Michigan",       0.0425, 5600,  11200);
+  configs.MI = makeConfig("MI", "Michigan", {
+    city: "Detroit",
+    features: { flatRate: 0.0425, hasCityTax: true },
+    stateStdS: 5600, stateStdMFJ: 11200,
+    cityMFJ: [[Infinity,.024]], cityS: [[Infinity,.024]],
+    notes: { info: "Detroit city tax 2.40%. Grand Rapids 1.50%. 24 MI cities levy local tax." }
+  });
   configs.MT = makeFlat("MT", "Montana",        0.059,  14600, 29200);
   configs.NC = makeFlat("NC", "North Carolina", 0.045,  12750, 25500);
-  configs.PA = makeFlat("PA", "Pennsylvania",   0.0307, 0,     0);
+  configs.PA = makeConfig("PA", "Pennsylvania", {
+    city: "Philadelphia",
+    features: { flatRate: 0.0307, hasCityTax: true },
+    cityMFJ: [[Infinity,.0375]], cityS: [[Infinity,.0375]],
+    notes: { info: "Philadelphia wage tax 3.75%. Pittsburgh 3.00%." }
+  });
   configs.UT = makeFlat("UT", "Utah",           0.0465, 0,     0);
 
   /* ── Progressive Bracket States ── */
@@ -204,17 +226,23 @@ const StateRegistry = (() => {
 
   /* Maryland */
   configs.MD = makeConfig("MD", "Maryland", {
+    city: "Baltimore City",
+    features: { hasCityTax: true },
     stateMFJ: [[1000,.02],[2000,.03],[3000,.04],[150000,.0475],[175000,.05],[225000,.0525],[300000,.055],[Infinity,.0575]],
     stateS:   [[1000,.02],[2000,.03],[3000,.04],[100000,.0475],[125000,.05],[150000,.0525],[250000,.055],[Infinity,.0575]],
     stateStdMFJ: 4800, stateStdS: 2400,
-    notes: { info: "MD counties levy additional 2.25%-3.20% income tax." }
+    cityMFJ: [[Infinity,.032]], cityS: [[Infinity,.032]],
+    notes: { info: "Baltimore City / most MD counties levy 3.20%. Range: 2.25%-3.30%." }
   });
 
   /* Ohio */
   configs.OH = makeConfig("OH", "Ohio", {
+    city: "Columbus",
+    features: { hasCityTax: true },
     stateMFJ: [[26050,0],[100000,.0275],[Infinity,.035]],
     stateStdMFJ: 0, stateStdS: 0,
-    notes: { info: "Several OH cities levy 2.0%-2.5% municipal income tax." }
+    cityMFJ: [[Infinity,.025]], cityS: [[Infinity,.025]],
+    notes: { info: "Columbus 2.50%. Cleveland 2.00%. Cincinnati 1.80%. Dayton 2.50%." }
   });
 
   /* Kansas */
@@ -233,8 +261,12 @@ const StateRegistry = (() => {
 
   /* Missouri */
   configs.MO = makeConfig("MO", "Missouri", {
+    city: "Kansas City",
+    features: { hasCityTax: true },
     stateMFJ: [[1253,0],[2506,.02],[3759,.025],[5012,.03],[6265,.035],[7518,.04],[8771,.045],[Infinity,.047]],
-    stateStdMFJ: 29200, stateStdS: 14600
+    stateStdMFJ: 29200, stateStdS: 14600,
+    cityMFJ: [[Infinity,.01]], cityS: [[Infinity,.01]],
+    notes: { info: "Kansas City & St. Louis each levy 1.00% earnings tax." }
   });
 
   /* Nebraska */
@@ -285,9 +317,12 @@ const StateRegistry = (() => {
 
   /* Alabama */
   configs.AL = makeConfig("AL", "Alabama", {
+    city: "Birmingham",
+    features: { hasCityTax: true },
     stateMFJ: [[500,.02],[3000,.04],[Infinity,.05]],
     stateStdMFJ: 7500, stateStdS: 2500,
-    notes: { info: "AL allows deduction of federal income tax paid from state taxable income." }
+    cityMFJ: [[Infinity,.01]], cityS: [[Infinity,.01]],
+    notes: { info: "AL allows deduction of federal income tax paid. Birmingham occupational tax 1.00%." }
   });
 
   /* Mississippi */
