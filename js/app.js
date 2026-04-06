@@ -193,6 +193,15 @@ const App = (() => {
 
   function recalculate() {
     const selVal = (id) => { const el = document.getElementById(id); return el ? el.value : null; };
+    const stratOn = !!document.getElementById("strategyMaster")?.checked;
+
+    // Update strategy toggles UI based on master toggle
+    const stratToggles = document.getElementById("strategyToggles");
+    if (stratToggles) stratToggles.style.opacity = stratOn ? "1" : "0.4";
+    const detBtn = document.getElementById("strategyDetailToggle");
+    if (detBtn) detBtn.style.display = stratOn ? "" : "none";
+    const detPanel = document.getElementById("strategyDetails");
+    if (detPanel && !stratOn) detPanel.style.display = "none";
 
     const inputs = {
       filingStatus: selVal("filingStatus") || "MFJ",
@@ -207,21 +216,21 @@ const App = (() => {
       stateLocal: V("stateLocal"),
       charitableCash: 0, // charitable now in strategy section
       otherDeductions: V("otherDeductions"),
-      // Premium strategies (with on/off)
-      bhOn: isPremium ? !!document.getElementById("bhOn")?.checked : false,
-      bhCash: isPremium ? V("bhCash") : 0,
-      bhLeverage: isPremium ? V("bhLeverage") || 5 : 0,
-      filmOn: isPremium ? !!document.getElementById("filmOn")?.checked : false,
-      matPart: isPremium ? !!document.getElementById("matPart")?.checked : false,
-      filmCash: isPremium ? V("filmCash") : 0,
-      filmLeverage: isPremium ? V("filmLeverage") || 5 : 0,
-      solarOn: isPremium ? !!document.getElementById("solarOn")?.checked : false,
-      solarEquity: isPremium ? V("solarEquity") : 0,
-      solarLeverage: isPremium ? V("solarLeverage") || 5 : 0,
-      solarITCRate: isPremium ? (V("solarITCRate") / 100 || 0.30) : 0,
-      charMaxMode: isPremium ? selVal("charMode") === "MAX" : false,
-      charLevCash: isPremium ? V("charLevCash") : 0,
-      charLevLeverage: isPremium ? V("charLevLeverage") || 6 : 0,
+      // Premium strategies — master toggle gates everything
+      bhOn: isPremium && stratOn ? !!document.getElementById("bhOn")?.checked : false,
+      bhCash: isPremium && stratOn ? V("bhCash") : 0,
+      bhLeverage: isPremium && stratOn ? V("bhLeverage") || 5 : 0,
+      filmOn: isPremium && stratOn ? !!document.getElementById("filmOn")?.checked : false,
+      matPart: isPremium && stratOn ? !!document.getElementById("matPart")?.checked : false,
+      filmCash: isPremium && stratOn ? V("filmCash") : 0,
+      filmLeverage: isPremium && stratOn ? V("filmLeverage") || 5 : 0,
+      solarOn: isPremium && stratOn ? !!document.getElementById("solarOn")?.checked : false,
+      solarEquity: isPremium && stratOn ? V("solarEquity") : 0,
+      solarLeverage: isPremium && stratOn ? V("solarLeverage") || 5 : 0,
+      solarITCRate: isPremium && stratOn ? (V("solarITCRate") / 100 || 0.30) : 0,
+      charMaxMode: isPremium && stratOn ? selVal("charMode") === "MAX" : false,
+      charLevCash: isPremium && stratOn ? V("charLevCash") : 0,
+      charLevLeverage: isPremium && stratOn ? V("charLevLeverage") || 6 : 0,
       yr2Salary: V("yr2Salary") || V("salary"),
       yr2SpouseSalary: V("yr2SpouseSalary") || V("spouseSalary"),
       yr2OtherIncome: V("yr2OtherIncome"),
@@ -437,6 +446,7 @@ const App = (() => {
         detailBtn.textContent = open ? "Details ▾" : "Details ▴";
       });
     }
+
 
     // Export button
     const exportBtn = document.getElementById("exportExcel");
