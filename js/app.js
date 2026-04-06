@@ -427,6 +427,17 @@ const App = (() => {
       });
     });
 
+    // Strategy details toggle
+    const detailBtn = document.getElementById("strategyDetailToggle");
+    const detailPanel = document.getElementById("strategyDetails");
+    if (detailBtn && detailPanel) {
+      detailBtn.addEventListener("click", () => {
+        const open = detailPanel.style.display !== "none";
+        detailPanel.style.display = open ? "none" : "";
+        detailBtn.textContent = open ? "Details ▾" : "Details ▴";
+      });
+    }
+
     // Export button
     const exportBtn = document.getElementById("exportExcel");
     if (exportBtn) exportBtn.addEventListener("click", exportExcel);

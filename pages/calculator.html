@@ -47,6 +47,49 @@
 
         <div class="calc-body">
 
+          <!-- ═══ STRATEGY TOGGLES (top bar, full width) ═══ -->
+          <div class="calc-col-full premium-overlay">
+            <div class="premium-gate free-only" id="premiumGate">
+              <h3>🔒 Unlock Tax Strategies</h3>
+              <p>See how Box House, Film §181, Solar ITC, and Leveraged Charitable investments can save you $200K+ per year.</p>
+              <form id="emailForm" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+                <input type="email" class="email-input" id="emailInput" placeholder="Enter your email for 24-hour free trial" required>
+                <button type="submit" class="btn btn-primary">Start Free Trial</button>
+              </form>
+              <p style="font-size:11px;margin-top:8px;color:var(--muted)">No credit card required. Full access for 24 hours.</p>
+            </div>
+            <div class="premium-only" style="display:none">
+              <div class="calc-card strategy-bar">
+                <h3>🎯 Strategies</h3>
+                <div class="strategy-toggles">
+                  <div class="strategy-toggle-item">
+                    <label class="toggle"><input type="checkbox" id="bhOn" checked><span class="toggle-slider"></span></label>
+                    <span>🏠 Box House</span>
+                  </div>
+                  <div class="strategy-toggle-item">
+                    <label class="toggle"><input type="checkbox" id="filmOn" checked><span class="toggle-slider"></span></label>
+                    <span>🎬 Film §181</span>
+                  </div>
+                  <div class="strategy-toggle-item">
+                    <label class="toggle"><input type="checkbox" id="matPart" checked><span class="toggle-slider"></span></label>
+                    <span style="font-size:11px;color:var(--muted)">Material Participation</span>
+                  </div>
+                  <div class="strategy-toggle-item">
+                    <label class="toggle"><input type="checkbox" id="solarOn" checked><span class="toggle-slider"></span></label>
+                    <span>☀️ Solar ITC</span>
+                  </div>
+                  <div class="strategy-toggle-item">
+                    <span>💝 Charitable</span>
+                    <select id="charMode" style="width:auto;font-size:12px"><option value="MAX">Max 60% AGI</option><option value="CUSTOM">Custom</option></select>
+                  </div>
+                </div>
+                <div style="margin-top:8px;text-align:right">
+                  <button class="btn btn-sm btn-outline" id="strategyDetailToggle">Details ▾</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- ═══ LEFT COLUMN: Inputs ═══ -->
           <div class="calc-col-left">
 
@@ -79,128 +122,92 @@
             </div>
           </div>
 
-          <!-- ═══ STRATEGIES (PREMIUM) ═══ -->
-          <div class="premium-overlay">
-
-            <!-- Premium gate -->
-            <div class="premium-gate free-only" id="premiumGate">
-              <h3>🔒 Unlock Tax Strategies</h3>
-              <p>See how Box House, Film §181, Solar ITC, and Leveraged Charitable investments can save you $200K+ per year.</p>
-              <form id="emailForm" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-                <input type="email" class="email-input" id="emailInput" placeholder="Enter your email for 24-hour free trial" required>
-                <button type="submit" class="btn btn-primary">Start Free Trial</button>
-              </form>
-              <p style="font-size:11px;margin-top:8px;color:var(--muted)">No credit card required. Full access for 24 hours.</p>
+          <!-- ═══ STRATEGY DETAILS (collapsible, premium) ═══ -->
+          <div class="premium-only strategy-details" id="strategyDetails" style="display:none">
+            <div class="calc-card">
+              <h3>🏠 Box House</h3>
+              <div class="row">
+                <span class="label">Cash Investment</span>
+                <input type="text" inputmode="decimal" class="num-input" id="bhCash" value="130,000">
+              </div>
+              <div class="row">
+                <span class="label">Leverage Multiple</span>
+                <input type="text" inputmode="decimal" class="num-input" id="bhLeverage" value="5" style="width:60px">
+              </div>
+              <div class="sep"></div>
+              <div class="row result">
+                <span class="label">Box House Loss</span>
+                <span class="value" id="outBHLoss">$0</span>
+              </div>
             </div>
 
-            <!-- Strategy inputs (visible only in premium) -->
-            <div class="premium-only" style="display:none">
-
-              <div class="calc-card">
-                <h3>🏠 Box House</h3>
-                <div class="row">
-                  <span class="label">Enable Box House?</span>
-                  <label class="toggle"><input type="checkbox" id="bhOn" checked><span class="toggle-slider"></span></label>
-                </div>
-                <div class="row">
-                  <span class="label">Cash Investment</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="bhCash" value="130,000">
-                </div>
-                <div class="row">
-                  <span class="label">Leverage Multiple</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="bhLeverage" value="5" style="width:60px">
-                </div>
-                <div class="sep"></div>
-                <div class="row result">
-                  <span class="label">Box House Loss</span>
-                  <span class="value" id="outBHLoss">$0</span>
-                </div>
+            <div class="calc-card">
+              <h3>🎬 Film §181</h3>
+              <div class="row">
+                <span class="label">Film Cash</span>
+                <input type="text" inputmode="decimal" class="num-input" id="filmCash" value="100,000">
               </div>
-
-              <div class="calc-card">
-                <h3>🎬 Film §181</h3>
-                <div class="row">
-                  <span class="label">Enable Film?</span>
-                  <label class="toggle"><input type="checkbox" id="filmOn" checked><span class="toggle-slider"></span></label>
-                </div>
-                <div class="row">
-                  <span class="label">Material Participation?</span>
-                  <label class="toggle"><input type="checkbox" id="matPart" checked><span class="toggle-slider"></span></label>
-                </div>
-                <div class="row">
-                  <span class="label">Film Cash</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="filmCash" value="100,000">
-                </div>
-                <div class="row">
-                  <span class="label">Film Leverage</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="filmLeverage" value="5" style="width:60px">
-                </div>
-                <div class="sep"></div>
-                <div class="row result film">
-                  <span class="label">Film §181 Loss</span>
-                  <span class="value" id="outFilmLoss">$0</span>
-                </div>
-                <div class="row" style="font-size:11px;color:var(--accent)">
-                  <span class="label">✓ Flows through to NY — no add-back</span>
-                </div>
+              <div class="row">
+                <span class="label">Film Leverage</span>
+                <input type="text" inputmode="decimal" class="num-input" id="filmLeverage" value="5" style="width:60px">
               </div>
-
-              <div class="calc-card">
-                <h3>☀️ Solar ITC</h3>
-                <div class="row">
-                  <span class="label">Enable Solar?</span>
-                  <label class="toggle"><input type="checkbox" id="solarOn" checked><span class="toggle-slider"></span></label>
-                </div>
-                <div class="row">
-                  <span class="label">Solar Equity</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="solarEquity" value="77,000">
-                </div>
-                <div class="row">
-                  <span class="label">Solar Leverage</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="solarLeverage" value="2.66" style="width:60px">
-                </div>
-                <div class="row solar">
-                  <span class="label">Solar Asset Price</span>
-                  <span class="value blue" id="outSolarAsset">$0</span>
-                </div>
-                <div class="row">
-                  <span class="label">ITC Rate (%)</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="solarITCRate" value="36" style="width:60px">
-                </div>
-                <div class="row solar">
-                  <span class="label">Solar ITC (direct credit)</span>
-                  <span class="value blue" id="outSolarITC">$0</span>
-                </div>
-                <div class="row solar">
-                  <span class="label">Depreciable Basis</span>
-                  <span class="value" id="outSolarBasis">$0</span>
-                </div>
-                <div class="sep"></div>
-                <div class="row result solar">
-                  <span class="label">Solar Net Yr1 Loss</span>
-                  <span class="value blue" id="outSolarLoss">$0</span>
-                </div>
+              <div class="sep"></div>
+              <div class="row result film">
+                <span class="label">Film §181 Loss</span>
+                <span class="value" id="outFilmLoss">$0</span>
               </div>
+              <div class="row" style="font-size:11px;color:var(--accent)">
+                <span class="label">✓ Flows through to NY — no add-back</span>
+              </div>
+            </div>
 
-              <div class="calc-card">
-                <h3>💝 Leveraged Charitable</h3>
-                <div class="row">
-                  <span class="label">Mode</span>
-                  <select id="charMode"><option value="MAX">Maximum (60% AGI)</option><option value="CUSTOM">Custom</option></select>
-                </div>
-                <div class="row">
-                  <span class="label">Charitable Leverage</span>
-                  <input type="text" inputmode="decimal" class="num-input" id="charLevLeverage" value="6" style="width:60px">
-                </div>
-                <div class="row">
-                  <span class="label">Cash Donation</span>
-                  <span class="value" id="outCharCash">$0</span>
-                </div>
-                <div class="sep"></div>
-                <div class="row result">
-                  <span class="label">Charitable Deduction</span>
-                  <span class="value" id="outCharDonation">$0</span>
-                </div>
+            <div class="calc-card">
+              <h3>☀️ Solar ITC</h3>
+              <div class="row">
+                <span class="label">Solar Equity</span>
+                <input type="text" inputmode="decimal" class="num-input" id="solarEquity" value="77,000">
+              </div>
+              <div class="row">
+                <span class="label">Solar Leverage</span>
+                <input type="text" inputmode="decimal" class="num-input" id="solarLeverage" value="2.66" style="width:60px">
+              </div>
+              <div class="row solar">
+                <span class="label">Solar Asset Price</span>
+                <span class="value blue" id="outSolarAsset">$0</span>
+              </div>
+              <div class="row">
+                <span class="label">ITC Rate (%)</span>
+                <input type="text" inputmode="decimal" class="num-input" id="solarITCRate" value="36" style="width:60px">
+              </div>
+              <div class="row solar">
+                <span class="label">Solar ITC (direct credit)</span>
+                <span class="value blue" id="outSolarITC">$0</span>
+              </div>
+              <div class="row solar">
+                <span class="label">Depreciable Basis</span>
+                <span class="value" id="outSolarBasis">$0</span>
+              </div>
+              <div class="sep"></div>
+              <div class="row result solar">
+                <span class="label">Solar Net Yr1 Loss</span>
+                <span class="value blue" id="outSolarLoss">$0</span>
+              </div>
+            </div>
+
+            <div class="calc-card">
+              <h3>💝 Leveraged Charitable</h3>
+              <div class="row">
+                <span class="label">Charitable Leverage</span>
+                <input type="text" inputmode="decimal" class="num-input" id="charLevLeverage" value="6" style="width:60px">
+              </div>
+              <div class="row">
+                <span class="label">Cash Donation</span>
+                <span class="value" id="outCharCash">$0</span>
+              </div>
+              <div class="sep"></div>
+              <div class="row result">
+                <span class="label">Charitable Deduction</span>
+                <span class="value" id="outCharDonation">$0</span>
               </div>
             </div>
           </div>
