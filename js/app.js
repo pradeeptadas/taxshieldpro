@@ -553,6 +553,42 @@ const App = (() => {
   }
 
   /* ══════════════════════════════
+     Screenshot Export (Premium)
+     ══════════════════════════════ */
+  function saveScreenshot() {
+    if (!isPremium || !currentResult) return;
+    if (typeof html2canvas === "undefined") {
+      alert("Screenshot library loading… please try again.");
+      return;
+    }
+
+    const wrapper = document.querySelector(".calc-wrapper");
+    if (!wrapper) return;
+
+    const btn = document.getElementById("saveScreenshot");
+    if (btn) { btn.textContent = "⏳ Capturing…"; btn.disabled = true; }
+
+    html2canvas(wrapper, {
+      backgroundColor: getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#0f172a",
+      scale: 2,
+      useCORS: true,
+      logging: false
+    }).then(canvas => {
+      const link = document.createElement("a");
+      const state = currentStateConfig ? currentStateConfig.id : "US";
+      const date = new Date().toISOString().slice(0, 10);
+      link.download = `TaxShieldPro_${state}_${date}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+      if (btn) { btn.textContent = "📸 Save as Image"; btn.disabled = false; }
+    }).catch(err => {
+      console.error("Screenshot error:", err);
+      alert("Screenshot failed. Please try again.");
+      if (btn) { btn.textContent = "📸 Save as Image"; btn.disabled = false; }
+    });
+  }
+
+  /* ══════════════════════════════
      Email Gate
      ══════════════════════════════ */
   function initEmailGate() {
@@ -593,9 +629,11 @@ const App = (() => {
       });
     });
 
-    // Export button
+    // Export buttons
     const exportBtn = document.getElementById("exportExcel");
     if (exportBtn) exportBtn.addEventListener("click", exportExcel);
+    const screenshotBtn = document.getElementById("saveScreenshot");
+    if (screenshotBtn) screenshotBtn.addEventListener("click", saveScreenshot);
 
     // Start trial button
     document.querySelectorAll(".start-trial-btn").forEach(btn => {

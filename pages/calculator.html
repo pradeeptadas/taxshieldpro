@@ -482,8 +482,9 @@
           <!-- MACRS section moved into Multi-Year Benefits table above -->
 
           <!-- ═══ EXPORT (PREMIUM) ═══ -->
-          <div class="premium-only" style="display:none;text-align:center;padding:20px 0">
+          <div class="premium-only" style="display:none;text-align:center;padding:20px 0;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
             <button class="btn btn-accent btn-lg" id="exportExcel">📥 Export to Excel</button>
+            <button class="btn btn-primary btn-lg" id="saveScreenshot">📸 Save as Image</button>
           </div>
 
           <!-- ═══ BOTTOM CTA (FREE) ═══ -->
@@ -509,6 +510,7 @@
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="../js/states/ny.js?v=7"></script>
   <script src="../js/states/registry.js?v=7"></script>
   <script src="../js/calc-engine.js?v=7"></script>
