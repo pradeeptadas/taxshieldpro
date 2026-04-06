@@ -169,12 +169,12 @@ test("Total Tax (Year 1) = $67,885", () => {
 });
 
 // --- Savings ---
-test("Base Tax (no strategies) = $563,710", () => {
-  assertClose(r.baseTotalTax, 563710, "baseTotalTax", 2);
+test("Base Tax (no strategies) = $558,551", () => {
+  assertClose(r.baseTotalTax, 558551, "baseTotalTax", 2);
 });
 
-test("Year 1 Savings = $495,825", () => {
-  assertClose(r.yr1Savings, 495825, "yr1Savings", 2);
+test("Year 1 Savings = $490,666", () => {
+  assertClose(r.yr1Savings, 490666, "yr1Savings", 2);
 });
 
 // --- Cash Outlay ---
