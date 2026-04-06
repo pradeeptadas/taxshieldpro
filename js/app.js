@@ -207,6 +207,11 @@ const App = (() => {
       if (!stratOn) dedEl.value = "STANDARD";
       dedEl.disabled = !stratOn;
     }
+    const itemFields = document.getElementById("itemizedFields");
+    if (itemFields) {
+      const showItemized = (dedEl ? dedEl.value : "STANDARD") !== "STANDARD";
+      itemFields.style.display = showItemized ? "" : "none";
+    }
 
     const inputs = {
       filingStatus: selVal("filingStatus") || "MFJ",
