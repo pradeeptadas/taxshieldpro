@@ -202,6 +202,11 @@ const App = (() => {
     if (detBtn) detBtn.style.display = stratOn ? "" : "none";
     const detPanel = document.getElementById("strategyDetails");
     if (detPanel && !stratOn) detPanel.style.display = "none";
+    const dedEl = document.getElementById("dedType");
+    if (dedEl) {
+      if (!stratOn) dedEl.value = "STANDARD";
+      dedEl.disabled = !stratOn;
+    }
 
     const inputs = {
       filingStatus: selVal("filingStatus") || "MFJ",
@@ -209,8 +214,8 @@ const App = (() => {
       salary: V("salary"),
       spouseSalary: V("spouseSalary"),
       otherIncome: V("otherIncome"),
-      // Deductions
-      dedType: selVal("dedType") || "ITEMIZED",
+      // Deductions — force standard when strategy mode is off
+      dedType: stratOn ? (selVal("dedType") || "ITEMIZED") : "STANDARD",
       mortgage: V("mortgage"),
       propTax: V("propTax"),
       stateLocal: V("stateLocal"),
