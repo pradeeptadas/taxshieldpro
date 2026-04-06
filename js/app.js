@@ -307,11 +307,13 @@ const App = (() => {
     const selVal = (id) => { const el = document.getElementById(id); return el ? el.value : null; };
     const stratOn = !!document.getElementById("strategyMaster")?.checked;
 
-    // Update strategy toggles UI based on master toggle
-    const stratToggles = document.getElementById("strategyToggles");
-    if (stratToggles) stratToggles.style.opacity = stratOn ? "1" : "0.4";
+    // Update strategy table visibility based on master toggle
     const stratTable = document.getElementById("strategyTable");
     if (stratTable) stratTable.style.display = stratOn ? "" : "none";
+    const dedContainer = document.getElementById("dedTypeContainer");
+    if (dedContainer) dedContainer.style.display = stratOn ? "" : "none";
+    const filmNote = document.getElementById("filmFlowNote");
+    if (filmNote) filmNote.style.display = stratOn ? "" : "none";
     const dedEl = document.getElementById("dedType");
     if (dedEl) {
       if (!stratOn) dedEl.value = "STANDARD";
