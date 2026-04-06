@@ -331,8 +331,10 @@
             </div>
           </div>
 
-          <!-- ═══ YEAR 2 (PREMIUM) ═══ -->
-          <div class="premium-only" style="display:none">
+          </div><!-- /calc-col-right -->
+
+          <!-- ═══ MULTI-YEAR BENEFITS (PREMIUM, full width) ═══ -->
+          <div class="calc-col-full premium-only" style="display:none">
             <div class="calc-card" style="overflow-x:auto">
               <h3>📅 Multi-Year Benefits</h3>
               <table class="data-table" style="width:100%;font-size:13px">
@@ -341,6 +343,7 @@
                     <th style="text-align:left;width:200px"></th>
                     <th style="text-align:center">Year 1</th>
                     <th style="text-align:center">Year 2</th>
+                    <th style="text-align:center;font-weight:700">Combined</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -348,16 +351,19 @@
                     <td style="font-weight:600">Salary</td>
                     <td style="text-align:center" id="outYr1SalaryCol">$0</td>
                     <td><input type="text" inputmode="decimal" class="num-input" id="yr2Salary" value="" placeholder="Same as Yr1" style="width:110px"></td>
+                    <td></td>
                   </tr>
                   <tr id="yr2SpouseRow" style="display:none">
                     <td style="font-weight:600">Spouse Salary</td>
                     <td style="text-align:center" id="outYr1SpouseSalaryCol">$0</td>
                     <td><input type="text" inputmode="decimal" class="num-input" id="yr2SpouseSalary" value="" placeholder="Same" style="width:110px"></td>
+                    <td></td>
                   </tr>
                   <tr>
                     <td style="font-weight:600">Other Income</td>
                     <td style="text-align:center" id="outYr1OtherIncomeCol">$0</td>
                     <td><input type="text" inputmode="decimal" class="num-input" id="yr2OtherIncome" value="0" style="width:110px"></td>
+                    <td></td>
                   </tr>
                   <tr>
                     <td style="font-weight:600">Solar Recapture</td>
@@ -366,67 +372,66 @@
                       <span style="font-size:11px;color:var(--muted);margin-left:4px">@</span>
                       <input type="text" inputmode="decimal" class="num-input" id="solarRecaptureRate" value="30" style="width:40px"><span style="font-size:11px;color:var(--muted)">%</span>
                     </td>
+                    <td></td>
                   </tr>
                   <tr>
                     <td style="font-weight:600">NOL Applied</td>
                     <td style="text-align:center;color:var(--muted)">—</td>
                     <td style="text-align:center;color:var(--accent)" id="outYr2NOL">$0</td>
+                    <td></td>
                   </tr>
                   <tr id="yr2MacrsRow">
                     <td style="font-weight:600">State MACRS Recovery</td>
                     <td style="text-align:center" id="outYr1MACRS">$0</td>
                     <td style="text-align:center" id="outYr2MACRS">$0</td>
+                    <td></td>
                   </tr>
                   <tr style="border-top:2px solid var(--border)">
                     <td style="font-weight:600">Gross Income</td>
                     <td style="text-align:center" id="outYr1GrossCol">$0</td>
                     <td style="text-align:center" id="outYr2Gross">$0</td>
+                    <td></td>
                   </tr>
                   <tr>
                     <td style="font-weight:600">AGI</td>
                     <td style="text-align:center" id="outYr1AGICol">$0</td>
                     <td style="text-align:center" id="outYr2AGI">$0</td>
+                    <td></td>
                   </tr>
                   <tr style="border-top:2px solid var(--primary);font-weight:700">
                     <td>Tax (with strategies)</td>
                     <td style="text-align:center" id="outYr1TaxCol">$0</td>
                     <td style="text-align:center" id="outYr2Tax">$0</td>
+                    <td></td>
                   </tr>
                   <tr>
                     <td style="font-weight:600">Tax (no strategies)</td>
                     <td style="text-align:center" id="outYr1BaseTaxCol">$0</td>
                     <td style="text-align:center" id="outYr2BaseTax">$0</td>
+                    <td></td>
                   </tr>
                   <tr class="savings" style="font-weight:700">
                     <td>Savings</td>
                     <td style="text-align:center" id="outYr1SavingsCol">$0</td>
                     <td style="text-align:center" id="outYr2Savings">$0</td>
+                    <td style="text-align:center" id="outCombinedSavings">$0</td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight:600">Cash Invested</td>
+                    <td style="text-align:center" id="outTotalCash">$0</td>
+                    <td style="text-align:center;color:var(--muted)">—</td>
+                    <td></td>
+                  </tr>
+                  <tr style="font-weight:700">
+                    <td>ROI</td>
+                    <td></td>
+                    <td></td>
+                    <td style="text-align:center" id="outROI">0%</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
-
-          <!-- ═══ COMBINED 2-YEAR (PREMIUM) ═══ -->
-          <div class="premium-only" style="display:none">
-            <div class="calc-card">
-              <h3>🎯 Combined 2-Year Summary</h3>
-              <div class="row total">
-                <span class="label">Total 2-Year Tax Savings</span>
-                <span class="value" id="outCombinedSavings">$0</span>
-              </div>
-              <div class="row">
-                <span class="label">Total Cash Invested</span>
-                <span class="value" id="outTotalCash">$0</span>
-              </div>
-              <div class="row savings">
-                <span class="label">Return on Investment</span>
-                <span class="value pos" id="outROI">0%</span>
-              </div>
-            </div>
-          </div>
-
-          </div><!-- /calc-col-right -->
 
           <!-- ═══ BRACKET TABLES (FREE) ═══ -->
           <div class="calc-col-full">
