@@ -430,6 +430,20 @@
                   </tr>
                 </tbody>
               </table>
+
+              <!-- MACRS Schedule (inline, only for decoupling states) -->
+              <div id="macrsSection" style="margin-top:16px">
+                <h4 style="margin:0 0 8px">🏗️ MACRS Depreciation Recovery (5-Year Half-Year)</h4>
+                <p style="font-size:12px;color:var(--muted);margin-bottom:8px">
+                  State add-back of BH + Solar losses recovered via MACRS over 6 years.
+                </p>
+                <table class="data-table" style="width:100%;font-size:13px">
+                  <thead>
+                    <tr><th>Year</th><th>Rate</th><th>Depreciation</th><th>State Savings</th><th>PV (5%)</th></tr>
+                  </thead>
+                  <tbody id="macrsBody"></tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -465,21 +479,7 @@
             </table>
           </div>
 
-          <!-- ═══ MACRS SCHEDULE (PREMIUM) ═══ -->
-          <div class="premium-only" id="macrsSection" style="display:none">
-            <div class="calc-card">
-              <h3>🏗️ MACRS Depreciation Recovery (5-Year)</h3>
-              <p style="font-size:12px;color:var(--muted);margin-bottom:12px">
-                State add-back of BH + Solar losses recovered via half-year convention MACRS over 6 years.
-              </p>
-              <table class="data-table">
-                <thead>
-                  <tr><th>Year</th><th>Rate</th><th>Depreciation</th><th>State Savings</th><th>PV (5%)</th></tr>
-                </thead>
-                <tbody id="macrsBody"></tbody>
-              </table>
-            </div>
-          </div>
+          <!-- MACRS section moved into Multi-Year Benefits table above -->
 
           <!-- ═══ EXPORT (PREMIUM) ═══ -->
           <div class="premium-only" style="display:none;text-align:center;padding:20px 0">
