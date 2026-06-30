@@ -28,8 +28,10 @@ const TaxEngine = (() => {
   }
 
   /* ── FICA (employee side) ── */
+  // Social Security wage base: 2026 = $184,500 (SSA contribution & benefit base).
+  const SS_WAGE_BASE = 184500;
   function calcFICA(gross, addMedThreshold) {
-    const ss = Math.min(gross, 176100) * 0.062;
+    const ss = Math.min(gross, SS_WAGE_BASE) * 0.062;
     const med = gross * 0.0145;
     const addMed = Math.max(gross - addMedThreshold, 0) * 0.009;
     return { ss, med, addMed, total: ss + med + addMed };

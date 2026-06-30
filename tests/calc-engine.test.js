@@ -161,17 +161,17 @@ test("City Tax = $11,682", () => {
   assertClose(r.cityTax, 11682, "cityTax", 2);
 });
 
-test("FICA = $39,218", () => {
-  assertClose(r.fica.total, 39218, "fica", 2);
+test("FICA = $39,739 (2026 SS wage base $184,500)", () => {
+  assertClose(r.fica.total, 39739, "fica", 2);
 });
 
-test("Total Tax (Year 1) = $67,885", () => {
-  assertClose(r.totalTax, 67885, "totalTax", 2);
+test("Total Tax (Year 1) = $68,406", () => {
+  assertClose(r.totalTax, 68406, "totalTax", 2);
 });
 
 // --- Savings ---
-test("Base Tax (no strategies) = $563,710", () => {
-  assertClose(r.baseTotalTax, 563710, "baseTotalTax", 2);
+test("Base Tax (no strategies) = $564,231", () => {
+  assertClose(r.baseTotalTax, 564231, "baseTotalTax", 2);
 });
 
 test("Year 1 Savings = $495,825", () => {
@@ -204,8 +204,8 @@ test("AGI = $1,300,000 (no strategies)", () => {
   assertClose(ns.agi, 1300000, "agi");
 });
 
-test("Total Tax = base tax = $563,710 (no strategies)", () => {
-  assertClose(ns.totalTax, 563710, "totalTax", 2);
+test("Total Tax = base tax = $564,231 (no strategies)", () => {
+  assertClose(ns.totalTax, 564231, "totalTax", 2);
 });
 
 test("Year 1 Savings = $0 (no strategies)", () => {
@@ -244,8 +244,8 @@ test("Single uses standard deduction", () => {
   assert(s.usingStandard === true, "should use standard deduction");
 });
 
-test("Single FICA SS capped at $176,100 wage base", () => {
-  assertClose(s.fica.ss, 176100 * 0.062, "fica.ss", 1);
+test("Single FICA SS capped at $184,500 wage base (2026)", () => {
+  assertClose(s.fica.ss, 184500 * 0.062, "fica.ss", 1);
 });
 
 // ═══════════════════════════════════════════════════════
@@ -263,7 +263,7 @@ test("Federal bracket tax on $100,000 (MFJ)", () => {
 
 test("FICA on $200,000 (under all thresholds)", () => {
   const fica = TaxEngine.calcFICA(200000, 250000);
-  assertClose(fica.ss, 10918.2, "ss", 1); // min(200000, 176100) * 0.062
+  assertClose(fica.ss, 11439, "ss", 1); // min(200000, 184500) * 0.062
   assertClose(fica.med, 2900, "med", 1); // 200000 * 0.0145
   assertClose(fica.addMed, 0, "addMed"); // under threshold
 });
@@ -493,6 +493,61 @@ test("All states produce valid tax with $500K MFJ no strategies", () => {
     assert(result.fedTaxNet >= 0, `${id}: fedTaxNet is negative`);
     assert(result.stateTax >= 0, `${id}: stateTax is negative`);
   }
+});
+
+// ═══════════════════════════════════════════════════════
+// Corrected rates / brackets (audit 2026-06) — regression locks
+// ═══════════════════════════════════════════════════════
+
+console.log("\n══ Corrected Rates & Brackets (audit) ══\n");
+
+test("Federal Single 37% bracket begins at $640,600 (not $384,300)", () => {
+  const fedS = StateRegistry.get("NY").brackets.S.fed;
+  const top37 = fedS[fedS.length - 1];      // [Infinity, .37]
+  const band35 = fedS[fedS.length - 2];     // [<37 start>, .35]
+  assert(band35[0] === 640600, `Single 37% start is ${band35[0]}, expected 640600`);
+  assert(top37[1] === 0.37, "top rate should be 37%");
+});
+
+test("FICA SS wage base is 2026 value ($184,500)", () => {
+  assertClose(TaxEngine.calcFICA(1000000, 250000).ss, 184500 * 0.062, "ss cap", 1);
+});
+
+test("NJ MFJ schedule has the 2.45% $50k-$70k bracket (distinct from Single)", () => {
+  const nj = StateRegistry.get("NJ").brackets;
+  assert(nj.MFJ.state.some(b => b[1] === 0.0245), "NJ MFJ missing 2.45% bracket");
+  assert(!nj.S.state.some(b => b[1] === 0.0245), "NJ Single should NOT have 2.45% bracket");
+});
+
+test("ND has 2.5% top bracket; Single schedule distinct from MFJ", () => {
+  const nd = StateRegistry.get("ND").brackets;
+  assert(nd.MFJ.state[nd.MFJ.state.length - 1][1] === 0.025, "ND top rate should be 2.5%");
+  assert(nd.S.state[0][0] !== nd.MFJ.state[0][0], "ND Single 0% band should differ from MFJ");
+});
+
+test("Flat-rate corrections (GA 4.99, ID 5.3, IN 2.95, KY 3.5, NC 3.99, UT 4.45, MT 5.65)", () => {
+  const fr = id => StateRegistry.get(id).features.flatRate;
+  assertClose(fr("GA"), 0.0499, "GA", 1e-6);
+  assertClose(fr("ID"), 0.053, "ID", 1e-6);
+  assertClose(fr("IN"), 0.0295, "IN", 1e-6);
+  assertClose(fr("KY"), 0.035, "KY", 1e-6);
+  assertClose(fr("NC"), 0.0399, "NC", 1e-6);
+  assertClose(fr("UT"), 0.0445, "UT", 1e-6);
+  assertClose(fr("MT"), 0.0565, "MT", 1e-6);
+});
+
+test("MS flat 4.0% and SC top 6.0%", () => {
+  const ms = StateRegistry.get("MS").brackets.MFJ.state;
+  assert(ms[ms.length - 1][1] === 0.04, "MS top should be 4.0%");
+  const sc = StateRegistry.get("SC").brackets.MFJ.state;
+  assert(sc[sc.length - 1][1] === 0.06, "SC top should be 6.0%");
+});
+
+test("WV 2026 rates (2.11% bottom, 4.58% top) with MFS half-width", () => {
+  const wv = StateRegistry.get("WV").brackets;
+  assert(wv.MFJ.state[0][1] === 0.0211, "WV bottom rate 2.11%");
+  assert(wv.MFJ.state[wv.MFJ.state.length - 1][1] === 0.0458, "WV top rate 4.58%");
+  assert(wv.MFS.state[0][0] === 5000, "WV MFS first threshold half-width $5,000");
 });
 
 // ═══════════════════════════════════════════════════════

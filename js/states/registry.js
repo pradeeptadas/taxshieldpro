@@ -1,6 +1,8 @@
 /* ═══════════════════════════════════════════════════════
    TaxShield Pro — State Registry
-   All 50 states + DC. Tax Year 2025/2026.
+   All 50 states + DC. Tax Year 2026.
+   Rates/brackets verified against IRS Rev. Proc. 2025-32 and
+   state DOR / enacted 2025-2026 legislation (audit 2026-06).
    ═══════════════════════════════════════════════════════ */
 
 const StateRegistry = (() => {
@@ -8,7 +10,7 @@ const StateRegistry = (() => {
 
   /* ── Federal brackets (shared by all states) ── */
   const FED_MFJ = [[24800,.10],[100500,.12],[211800,.22],[404100,.24],[513100,.32],[768600,.35],[Infinity,.37]];
-  const FED_S   = [[12400,.10],[50250,.12],[105900,.22],[202050,.24],[256550,.32],[384300,.35],[Infinity,.37]];
+  const FED_S   = [[12400,.10],[50250,.12],[105900,.22],[202050,.24],[256550,.32],[640600,.35],[Infinity,.37]];
   const FED_MFS = FED_S; // Same as Single for federal
 
   /* ── Helper: build a state config ── */
@@ -112,22 +114,22 @@ const StateRegistry = (() => {
   /* ── Flat Tax States ── */
   configs.AZ = makeFlat("AZ", "Arizona",       0.025,  14600, 29200);
   configs.CO = makeFlat("CO", "Colorado",       0.044,  15000, 30000);
-  configs.GA = makeFlat("GA", "Georgia",        0.0539, 12000, 24000);
-  configs.IA = makeFlat("IA", "Iowa",           0.038,  2210,  5450);
-  configs.ID = makeFlat("ID", "Idaho",          0.05695,14600, 29200);
+  configs.GA = makeFlat("GA", "Georgia",        0.0499, 12000, 24000);
+  configs.IA = makeFlat("IA", "Iowa",           0.038,  16100, 32200);
+  configs.ID = makeFlat("ID", "Idaho",          0.053,  14600, 29200);
   configs.IL = makeFlat("IL", "Illinois",       0.0495, 2625,  5250);
   configs.IN = makeConfig("IN", "Indiana", {
     city: "Indianapolis",
-    features: { flatRate: 0.0305, hasCityTax: true },
-    cityMFJ: [[Infinity,.0162]], cityS: [[Infinity,.0162]],
-    notes: { info: "Marion County (Indianapolis) rate 1.62%. Other IN counties vary 0.5%-2.9%." }
+    features: { flatRate: 0.0295, hasCityTax: true },
+    cityMFJ: [[Infinity,.0202]], cityS: [[Infinity,.0202]],
+    notes: { info: "IN state rate 2.95% (2026). Marion County (Indianapolis) rate 2.02%. Other IN counties vary." }
   });
   configs.KY = makeConfig("KY", "Kentucky", {
     city: "Louisville",
-    features: { flatRate: 0.04, hasCityTax: true },
-    stateStdS: 3160, stateStdMFJ: 6320,
+    features: { flatRate: 0.035, hasCityTax: true },
+    stateStdS: 3360, stateStdMFJ: 3360,
     cityMFJ: [[Infinity,.022]], cityS: [[Infinity,.022]],
-    notes: { info: "Louisville Metro occupational tax 2.20%. Lexington 2.25%." }
+    notes: { info: "KY state rate 3.5% (2026). Louisville Metro occupational tax 2.20%. Lexington 2.25%." }
   });
   configs.LA = makeFlat("LA", "Louisiana",      0.03,   12500, 25000);
   configs.MA = makeFlat("MA", "Massachusetts",  0.05,   0,     0);
@@ -138,15 +140,15 @@ const StateRegistry = (() => {
     cityMFJ: [[Infinity,.024]], cityS: [[Infinity,.024]],
     notes: { info: "Detroit city tax 2.40%. Grand Rapids 1.50%. 24 MI cities levy local tax." }
   });
-  configs.MT = makeFlat("MT", "Montana",        0.059,  14600, 29200);
-  configs.NC = makeFlat("NC", "North Carolina", 0.045,  12750, 25500);
+  configs.MT = makeFlat("MT", "Montana",        0.0565, 14600, 29200);
+  configs.NC = makeFlat("NC", "North Carolina", 0.0399, 12750, 25500);
   configs.PA = makeConfig("PA", "Pennsylvania", {
     city: "Philadelphia",
     features: { flatRate: 0.0307, hasCityTax: true },
-    cityMFJ: [[Infinity,.0375]], cityS: [[Infinity,.0375]],
-    notes: { info: "Philadelphia wage tax 3.75%. Pittsburgh 3.00%." }
+    cityMFJ: [[Infinity,.0374]], cityS: [[Infinity,.0374]],
+    notes: { info: "Philadelphia wage tax 3.74% (eff. 7/1/2025). Pittsburgh 3.00%." }
   });
-  configs.UT = makeFlat("UT", "Utah",           0.0465, 0,     0);
+  configs.UT = makeFlat("UT", "Utah",           0.0445, 0,     0);
 
   /* ── Progressive Bracket States ── */
 
@@ -159,7 +161,7 @@ const StateRegistry = (() => {
       hasCityTax: true
     },
     stateMFJ: [[17150,.039],[23600,.044],[27900,.0515],[161550,.054],[323200,.059],[2155350,.0685],[5000000,.0965],[25000000,.103],[Infinity,.109]],
-    stateS:   [[8500,.039],[11700,.044],[13900,.0515],[80650,.054],[161600,.059],[1077550,.0685],[2500000,.0965],[12500000,.103],[Infinity,.109]],
+    stateS:   [[8500,.039],[11700,.044],[13900,.0515],[80650,.054],[215400,.059],[1077550,.0685],[2500000,.0965],[12500000,.103],[Infinity,.109]],
     cityMFJ:  [[21600,.03078],[45000,.03762],[90000,.03819],[Infinity,.03876]],
     cityS:    [[10800,.03078],[22500,.03762],[45000,.03819],[Infinity,.03876]],
     stateStdMFJ: 16050, stateStdS: 8000,
@@ -183,23 +185,24 @@ const StateRegistry = (() => {
     notes: { info: "CA top rate includes 1% Mental Health Services surcharge on income over $1M." }
   });
 
-  /* New Jersey */
+  /* New Jersey — MFJ schedule differs from Single (adds 2.45% $50k-$70k bracket) */
   configs.NJ = makeConfig("NJ", "New Jersey", {
-    stateMFJ: [[20000,.014],[35000,.0175],[40000,.035],[75000,.05525],[500000,.0637],[1000000,.0897],[Infinity,.1075]],
+    stateMFJ: [[20000,.014],[50000,.0175],[70000,.0245],[80000,.035],[150000,.05525],[500000,.0637],[1000000,.0897],[Infinity,.1075]],
+    stateS:   [[20000,.014],[35000,.0175],[40000,.035],[75000,.05525],[500000,.0637],[1000000,.0897],[Infinity,.1075]],
     stateStdMFJ: 2000, stateStdS: 1000
   });
 
-  /* Connecticut */
+  /* Connecticut — two lowest rates corrected to 2% / 4.5% */
   configs.CT = makeConfig("CT", "Connecticut", {
-    stateMFJ: [[20000,.03],[100000,.05],[200000,.055],[400000,.06],[500000,.065],[1000000,.069],[Infinity,.0699]],
-    stateS:   [[10000,.03],[50000,.05],[100000,.055],[200000,.06],[250000,.065],[500000,.069],[Infinity,.0699]],
+    stateMFJ: [[20000,.02],[100000,.045],[200000,.055],[400000,.06],[500000,.065],[1000000,.069],[Infinity,.0699]],
+    stateS:   [[10000,.02],[50000,.045],[100000,.055],[200000,.06],[250000,.065],[500000,.069],[Infinity,.0699]],
     stateStdMFJ: 0, stateStdS: 0
   });
 
   /* Virginia */
   configs.VA = makeConfig("VA", "Virginia", {
     stateMFJ: [[3000,.02],[5000,.03],[17000,.05],[Infinity,.0575]],
-    stateStdMFJ: 16000, stateStdS: 8000
+    stateStdMFJ: 17500, stateStdS: 8750
   });
 
   /* Oregon */
@@ -223,45 +226,45 @@ const StateRegistry = (() => {
     stateStdMFJ: 24440, stateStdS: 13230
   });
 
-  /* Hawaii */
+  /* Hawaii — brackets and standard deduction updated (Act 46) */
   configs.HI = makeConfig("HI", "Hawaii", {
-    stateMFJ: [[4800,.014],[9600,.032],[19200,.055],[28800,.064],[38400,.068],[48000,.072],[72000,.076],[96000,.079],[300000,.0825],[350000,.09],[400000,.10],[Infinity,.11]],
-    stateS:   [[2400,.014],[4800,.032],[9600,.055],[14400,.064],[19200,.068],[24000,.072],[36000,.076],[48000,.079],[150000,.0825],[175000,.09],[200000,.10],[Infinity,.11]],
-    stateStdMFJ: 4400, stateStdS: 2200
+    stateMFJ: [[19200,.014],[28800,.032],[38400,.055],[48000,.064],[72000,.068],[96000,.072],[250000,.076],[350000,.079],[450000,.0825],[550000,.09],[650000,.10],[Infinity,.11]],
+    stateS:   [[9600,.014],[14400,.032],[19200,.055],[24000,.064],[36000,.068],[48000,.072],[125000,.076],[175000,.079],[225000,.0825],[275000,.09],[325000,.10],[Infinity,.11]],
+    stateStdMFJ: 16000, stateStdS: 8000
   });
 
-  /* South Carolina */
+  /* South Carolina — top rate 6.0% */
   configs.SC = makeConfig("SC", "South Carolina", {
-    stateMFJ: [[3460,0],[17330,.03],[Infinity,.062]],
+    stateMFJ: [[3460,0],[17330,.03],[Infinity,.06]],
     stateStdMFJ: 30000, stateStdS: 15000
   });
 
-  /* Maryland */
+  /* Maryland — adds two top brackets (6.25% / 6.5%) */
   configs.MD = makeConfig("MD", "Maryland", {
     city: "Baltimore City",
     features: { hasCityTax: true },
-    stateMFJ: [[1000,.02],[2000,.03],[3000,.04],[150000,.0475],[175000,.05],[225000,.0525],[300000,.055],[Infinity,.0575]],
-    stateS:   [[1000,.02],[2000,.03],[3000,.04],[100000,.0475],[125000,.05],[150000,.0525],[250000,.055],[Infinity,.0575]],
-    stateStdMFJ: 4800, stateStdS: 2400,
+    stateMFJ: [[1000,.02],[2000,.03],[3000,.04],[150000,.0475],[175000,.05],[225000,.0525],[300000,.055],[600000,.0575],[1200000,.0625],[Infinity,.065]],
+    stateS:   [[1000,.02],[2000,.03],[3000,.04],[100000,.0475],[125000,.05],[150000,.0525],[250000,.055],[500000,.0575],[1000000,.0625],[Infinity,.065]],
+    stateStdMFJ: 6700, stateStdS: 3350,
     cityMFJ: [[Infinity,.032]], cityS: [[Infinity,.032]],
     notes: { info: "Baltimore City / most MD counties levy 3.20%. Range: 2.25%-3.30%." }
   });
 
-  /* Ohio */
+  /* Ohio — flat 2.75% above $26,050 (HB 96) */
   configs.OH = makeConfig("OH", "Ohio", {
     city: "Columbus",
     features: { hasCityTax: true },
-    stateMFJ: [[26050,0],[100000,.0275],[Infinity,.035]],
+    stateMFJ: [[26050,0],[Infinity,.0275]],
     stateStdMFJ: 0, stateStdS: 0,
     cityMFJ: [[Infinity,.025]], cityS: [[Infinity,.025]],
     notes: { info: "Columbus 2.50%. Cleveland 2.00%. Cincinnati 1.80%. Dayton 2.50%." }
   });
 
-  /* Kansas */
+  /* Kansas — two-bracket schedule (SB 1) */
   configs.KS = makeConfig("KS", "Kansas", {
-    stateMFJ: [[30000,.031],[60000,.0525],[Infinity,.057]],
-    stateS:   [[15000,.031],[30000,.0525],[Infinity,.057]],
-    stateStdMFJ: 8000, stateStdS: 3500
+    stateMFJ: [[46000,.052],[Infinity,.0558]],
+    stateS:   [[23000,.052],[Infinity,.0558]],
+    stateStdMFJ: 8240, stateStdS: 3605
   });
 
   /* Maine */
@@ -281,24 +284,24 @@ const StateRegistry = (() => {
     notes: { info: "Kansas City & St. Louis each levy 1.00% earnings tax." }
   });
 
-  /* Nebraska */
+  /* Nebraska — top rate reduced to 4.55% (LB 754) */
   configs.NE = makeConfig("NE", "Nebraska", {
-    stateMFJ: [[7390,.0246],[44350,.0351],[71460,.0501],[Infinity,.0584]],
-    stateS:   [[3700,.0246],[22170,.0351],[35730,.0501],[Infinity,.0584]],
+    stateMFJ: [[7390,.0246],[44350,.0351],[71460,.0455],[Infinity,.0455]],
+    stateS:   [[3700,.0246],[22170,.0351],[35730,.0455],[Infinity,.0455]],
     stateStdMFJ: 16000, stateStdS: 8000
   });
 
-  /* New Mexico */
+  /* New Mexico — adds 4.3% bracket, bottom rate 1.5% (HB 252) */
   configs.NM = makeConfig("NM", "New Mexico", {
-    stateMFJ: [[8000,.017],[16000,.032],[24000,.047],[315000,.049],[Infinity,.059]],
-    stateS:   [[5500,.017],[11000,.032],[16000,.047],[210000,.049],[Infinity,.059]],
+    stateMFJ: [[8000,.015],[25000,.032],[50000,.043],[100000,.047],[315000,.049],[Infinity,.059]],
+    stateS:   [[5500,.015],[16500,.032],[33500,.043],[66500,.047],[210000,.049],[Infinity,.059]],
     stateStdMFJ: 29200, stateStdS: 14600
   });
 
-  /* Oklahoma */
+  /* Oklahoma — three-bracket schedule (HB 2764) */
   configs.OK = makeConfig("OK", "Oklahoma", {
-    stateMFJ: [[2000,.0025],[5000,.0075],[7500,.0175],[9800,.0275],[12200,.0375],[Infinity,.0475]],
-    stateS:   [[1000,.0025],[2500,.0075],[3750,.0175],[4900,.0275],[7200,.0375],[Infinity,.0475]],
+    stateMFJ: [[7500,0],[9800,.025],[14400,.035],[Infinity,.045]],
+    stateS:   [[3750,0],[4900,.025],[7200,.035],[Infinity,.045]],
     stateStdMFJ: 12700, stateStdS: 6350
   });
 
@@ -312,12 +315,13 @@ const StateRegistry = (() => {
   configs.VT = makeConfig("VT", "Vermont", {
     stateMFJ: [[75850,.0335],[183400,.066],[279450,.076],[Infinity,.0875]],
     stateS:   [[45400,.0335],[110050,.066],[229500,.076],[Infinity,.0875]],
-    stateStdMFJ: 30000, stateStdS: 15000
+    stateStdMFJ: 15300, stateStdS: 7650
   });
 
-  /* West Virginia */
+  /* West Virginia — 2026 rates (SB 392): 2.11 / 2.81 / 3.16 / 4.22 / 4.58% */
   configs.WV = makeConfig("WV", "West Virginia", {
-    stateMFJ: [[10000,.0236],[25000,.0315],[40000,.0354],[60000,.0472],[Infinity,.0482]],
+    stateMFJ: [[10000,.0211],[25000,.0281],[40000,.0316],[60000,.0422],[Infinity,.0458]],
+    stateMFS: [[5000,.0211],[12500,.0281],[20000,.0316],[30000,.0422],[Infinity,.0458]],
     stateStdMFJ: 0, stateStdS: 0
   });
 
@@ -327,31 +331,33 @@ const StateRegistry = (() => {
     stateStdMFJ: 4680, stateStdS: 2340
   });
 
-  /* Alabama */
+  /* Alabama — MFJ thresholds doubled vs Single */
   configs.AL = makeConfig("AL", "Alabama", {
     city: "Birmingham",
     features: { hasCityTax: true },
-    stateMFJ: [[500,.02],[3000,.04],[Infinity,.05]],
+    stateMFJ: [[1000,.02],[6000,.04],[Infinity,.05]],
+    stateS:   [[500,.02],[3000,.04],[Infinity,.05]],
     stateStdMFJ: 7500, stateStdS: 2500,
     cityMFJ: [[Infinity,.01]], cityS: [[Infinity,.01]],
     notes: { info: "AL allows deduction of federal income tax paid. Birmingham occupational tax 1.00%." }
   });
 
-  /* Mississippi */
+  /* Mississippi — flat 4.0% above $10k (HB 1), standard deduction corrected */
   configs.MS = makeConfig("MS", "Mississippi", {
-    stateMFJ: [[10000,0],[Infinity,.044]],
-    stateStdMFJ: 16600, stateStdS: 8300
+    stateMFJ: [[10000,0],[Infinity,.04]],
+    stateStdMFJ: 4600, stateStdS: 2300
   });
 
-  /* North Dakota */
+  /* North Dakota — adds 2.5% top bracket; Single schedule narrower than MFJ */
   configs.ND = makeConfig("ND", "North Dakota", {
-    stateMFJ: [[44725,0],[Infinity,.0195]],
+    stateMFJ: [[80975,0],[298075,.0195],[Infinity,.025]],
+    stateS:   [[48475,0],[244825,.0195],[Infinity,.025]],
     stateStdMFJ: 29200, stateStdS: 14600
   });
 
-  /* Delaware */
+  /* Delaware — bracket schedule realigned (adds 0% bracket) */
   configs.DE = makeConfig("DE", "Delaware", {
-    stateMFJ: [[2000,.022],[5000,.039],[10000,.048],[20000,.052],[25000,.0555],[60000,.066],[Infinity,.066]],
+    stateMFJ: [[2000,0],[5000,.022],[10000,.039],[20000,.048],[25000,.052],[60000,.0555],[Infinity,.066]],
     stateStdMFJ: 6500, stateStdS: 3250
   });
 

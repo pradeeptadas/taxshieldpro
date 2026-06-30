@@ -33,9 +33,11 @@ NYC income tax calculator for high-income W-2 earners. Live at https://pradeepta
 - NYS deduction: do NOT add back propTax
 - EBL must be computed BEFORE charitable
 
-## Reference Numbers ($1.3M MFJ, all strategies)
+## Reference Numbers ($1.3M MFJ, all strategies, NY)
 
-AGI $788,000 | Total Tax $67,885 | Base Tax $563,710 | Yr1 Savings $495,825
+AGI $788,000 | Total Tax $68,406 | Base Tax $564,231 | Yr1 Savings $495,825
+
+(Total/Base reflect the 2026 SS wage base of $184,500; savings delta is unchanged.)
 
 ## Testing — run before every push
 
