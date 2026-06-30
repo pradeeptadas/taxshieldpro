@@ -162,9 +162,20 @@ const TaxEngine = (() => {
     const itcCarryforward = Math.max(solarITC - fedTaxGross, 0);
     const fedTaxNet = fedTaxGross - itcApplied;
 
-    /* ── State tax ── */
-    const stateAddBack = feat.decouplesBonusDepreciation ? (eblBH + eblSolar) : 0;
-    const filmThru = feat.filmFlowsThrough ? eblFilm : 0;
+    /* ── Per-strategy state treatment (FLOW vs MACRS add-back) ──
+       Inputs override the state's defaults; state defaults derive from features. */
+    const st = stateConfig.stateTreatment || {};
+    const defTreat = (key, flowDefault) =>
+      inputs[key] || st[key === "bhTreatment" ? "bh" : key === "solarTreatment" ? "solar" : "film"] || flowDefault;
+    const treatBH    = feat.hasNoIncomeTax ? "FLOW" : defTreat("bhTreatment",    feat.decouplesBonusDepreciation ? "MACRS" : "FLOW");
+    const treatSolar = feat.hasNoIncomeTax ? "FLOW" : defTreat("solarTreatment", feat.decouplesBonusDepreciation ? "MACRS" : "FLOW");
+    const treatFilm  = feat.hasNoIncomeTax ? "FLOW" : defTreat("filmTreatment",  feat.filmFlowsThrough ? "FLOW" : (feat.decouplesBonusDepreciation ? "MACRS" : "FLOW"));
+
+    /* ── State tax: add back the EBL portion of each MACRS-treated strategy ── */
+    const addBackBH    = treatBH    === "MACRS" ? eblBH    : 0;
+    const addBackSolar = treatSolar === "MACRS" ? eblSolar : 0;
+    const addBackFilm  = treatFilm  === "MACRS" ? eblFilm  : 0;
+    const stateAddBack = addBackBH + addBackSolar + addBackFilm;
     const stateTaxableIncome = Math.max(agi + stateAddBack - stateDeduction, 0);
 
     /* ── City tax ── */
@@ -274,13 +285,16 @@ const TaxEngine = (() => {
     const yr2BaseTotalTax = yr2BaseFedTax + yr2BaseStateTax + yr2BaseCityTax + yr2FICA.total + yr2SpouseFICA.total;
     const yr2Savings = yr2BaseTotalTax - yr2TotalTax;
 
-    /* ── MACRS schedule ── */
+    /* ── MACRS schedule (per-strategy + combined) ── */
     const macrsBasis = stateAddBack; // portions added back by state
     const margState = b.state ? marginalRate(stateTaxableIncome, b.state) : (feat.flatRate || 0);
-    const margCity = b.city ? marginalRate(cityTaxableIncome, b.city) : 0;
-    const macrs = macrsBasis > 0
-      ? macrsSchedule(macrsBasis, margState, margCity)
-      : { rows: [], npv: 0, totalDep: 0, totalSavings: 0 };
+    const margCity = (cityTaxOn && b.city) ? marginalRate(cityTaxableIncome, b.city) : 0;
+    const emptyMacrs = { rows: [], npv: 0, totalDep: 0, totalSavings: 0 };
+    const mkMacrs = (basis) => basis > 0 ? macrsSchedule(basis, margState, margCity) : emptyMacrs;
+    const macrsBH    = mkMacrs(addBackBH);
+    const macrsSolar = mkMacrs(addBackSolar);
+    const macrsFilm  = mkMacrs(addBackFilm);
+    const macrs = mkMacrs(macrsBasis); // combined (backward compat)
 
     /* ── Combined 2-year ── */
     const combined2YrSavings = yr1Savings + yr2Savings;
@@ -306,7 +320,8 @@ const TaxEngine = (() => {
       agi, fedTaxableIncome, fedTaxGross, itcApplied, itcCarryforward, fedTaxNet,
 
       // State
-      stateAddBack, filmThru, stateTaxableIncome, stateTax,
+      stateAddBack, stateTaxableIncome, stateTax,
+      treatBH, treatSolar, treatFilm, addBackBH, addBackSolar, addBackFilm,
 
       // City
       cityTaxableIncome, cityTax,
@@ -324,7 +339,7 @@ const TaxEngine = (() => {
       yr2TotalTax, yr2BaseTotalTax, yr2Savings,
 
       // MACRS
-      macrs, macrsBasis, margState, margCity,
+      macrs, macrsBH, macrsSolar, macrsFilm, macrsBasis, margState, margCity,
 
       // Combined
       combined2YrSavings, totalCashInvested, roi,

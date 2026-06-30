@@ -189,6 +189,32 @@ const App = (() => {
     return null;
   }
 
+  /* State Treatment toggle buttons (FLOW ⟷ MACRS) */
+  function setTreatBtn(btn, mode) {
+    if (!btn) return;
+    btn.dataset.mode = mode;
+    if (mode === "MACRS") {
+      btn.textContent = "📅 MACRS";
+      btn.title = "Decoupled: loss added back to state income in year 1, recovered via 5-year MACRS";
+      btn.style.background = "var(--accent)";
+    } else {
+      btn.textContent = "↪ Flows through";
+      btn.title = "Conforms: full state deduction taken in year 1";
+      btn.style.background = "var(--info)";
+    }
+  }
+
+  function initTreatmentButtons() {
+    ["bhTreatBtn", "filmTreatBtn", "solarTreatBtn"].forEach(id => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.addEventListener("click", () => {
+        setTreatBtn(btn, btn.dataset.mode === "MACRS" ? "FLOW" : "MACRS");
+        recalculate();
+      });
+    });
+  }
+
   function updateStateUI() {
     const config = getSelectedConfig();
     if (!config) return;
@@ -234,21 +260,21 @@ const App = (() => {
     const stateTaxSec = document.getElementById("stateTaxSection");
     if (stateTaxSec) stateTaxSec.style.display = feat.hasNoIncomeTax ? "none" : "";
 
-    // Show/hide state add-back row
-    const addBackSection = document.getElementById("stateAddBackSection");
-    if (addBackSection) addBackSection.style.display = feat.decouplesBonusDepreciation ? "" : "none";
+    // Per-strategy State Treatment buttons — default from the selected state.
+    // Visibility of the add-back row / MACRS tables is driven at render time
+    // based on the actual add-back amount (which respects user overrides).
+    const treat = config.stateTreatment || {};
+    const treatRow = document.getElementById("treatmentRow");
+    if (treatRow) treatRow.style.display = feat.hasNoIncomeTax ? "none" : "";
+    setTreatBtn(document.getElementById("bhTreatBtn"), feat.hasNoIncomeTax ? "FLOW" : (treat.bh || "FLOW"));
+    setTreatBtn(document.getElementById("filmTreatBtn"), feat.hasNoIncomeTax ? "FLOW" : (treat.film || "FLOW"));
+    setTreatBtn(document.getElementById("solarTreatBtn"), feat.hasNoIncomeTax ? "FLOW" : (treat.solar || "FLOW"));
 
-    // Show/hide MACRS section
-    const macrsSection = document.getElementById("macrsSection");
-    if (macrsSection) macrsSection.style.display = feat.decouplesBonusDepreciation ? "" : "none";
-
-    // MACRS years default: 6 for decoupling states, 0 for bonus-dep states
+    // MACRS years default: 6 for any state that decouples a strategy by default
+    const anyMacrsDefault = !feat.hasNoIncomeTax &&
+      (treat.bh === "MACRS" || treat.solar === "MACRS" || treat.film === "MACRS");
     const macrsYearsEl = document.getElementById("macrsYears");
-    if (macrsYearsEl) macrsYearsEl.value = feat.decouplesBonusDepreciation ? 6 : 0;
-
-    // Show/hide Year 2 MACRS row
-    const yr2MacrsRow = document.getElementById("yr2MacrsRow");
-    if (yr2MacrsRow) yr2MacrsRow.style.display = feat.decouplesBonusDepreciation ? "" : "none";
+    if (macrsYearsEl) macrsYearsEl.value = anyMacrsDefault ? 6 : 0;
 
     // Update EBL display
     const fs = document.getElementById("filingStatus")?.value || "MFJ";
@@ -373,7 +399,11 @@ const App = (() => {
       yr2SpouseSalary: V("yr2SpouseSalary") || V("spouseSalary"),
       yr2OtherIncome: V("yr2OtherIncome"),
       solarRecaptureRate: V("solarRecaptureRate") / 100 || 0.30,
-      macrsYears: isPremium && stratOn ? (V("macrsYears") || 0) : 0
+      macrsYears: isPremium && stratOn ? (V("macrsYears") || 0) : 0,
+      // Per-strategy state treatment (null → engine uses the state's default)
+      bhTreatment: document.getElementById("bhTreatBtn")?.dataset.mode || null,
+      filmTreatment: document.getElementById("filmTreatBtn")?.dataset.mode || null,
+      solarTreatment: document.getElementById("solarTreatBtn")?.dataset.mode || null
     };
 
     currentStateConfig = getSelectedConfig();
@@ -446,6 +476,9 @@ const App = (() => {
     set("outITCApplied", fmt(r.itcApplied));
     set("outFedTaxNet", fmt(r.fedTaxNet));
     set("outStateAddBack", fmt(r.stateAddBack));
+    // State add-back row shows only when something is actually added back
+    const addBackSection = document.getElementById("stateAddBackSection");
+    if (addBackSection) addBackSection.style.display = r.stateAddBack > 0 ? "" : "none";
     set("outStateTaxable", fmt(r.stateTaxableIncome));
     set("outStateTaxResult", fmt(r.stateTaxableIncome));
     set("outStateTax", fmt(r.stateTax));
@@ -473,8 +506,11 @@ const App = (() => {
     set("outYr2Tax", fmt(r.yr2TotalTax));
     set("outYr2BaseTax", fmt(r.yr2BaseTotalTax));
     set("outYr2Savings", fmt(r.yr2Savings));
-    // MACRS recovery per year
-    if (r.macrs && r.macrs.rows.length > 0) {
+    // MACRS recovery per year (combined across strategies)
+    const hasMacrs = r.macrs && r.macrs.rows.length > 0;
+    const yr2MacrsRow = document.getElementById("yr2MacrsRow");
+    if (yr2MacrsRow) yr2MacrsRow.style.display = hasMacrs ? "" : "none";
+    if (hasMacrs) {
       set("outYr1MACRS", fmt(r.macrs.rows[0] ? r.macrs.rows[0].savings : 0));
       set("outYr2MACRS", fmt(r.macrs.rows[1] ? r.macrs.rows[1].savings : 0));
     } else {
@@ -512,20 +548,39 @@ const App = (() => {
   }
 
   function renderMACRS(r) {
-    const tbody = document.getElementById("macrsBody");
-    if (!tbody) return;
-    if (!r.macrs || r.macrs.rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted)">No state add-back — no MACRS recovery needed</td></tr>';
-      return;
-    }
-    tbody.innerHTML = r.macrs.rows.map(row =>
-      `<tr><td>Year ${row.year}</td><td>${(row.rate * 100).toFixed(2)}%</td>
-       <td>${fmt(row.depreciation)}</td><td>${fmt(row.savings)}</td><td>${fmt(row.pv)}</td></tr>`
-    ).join("") +
-    `<tr style="font-weight:700;border-top:2px solid var(--primary)">
-       <td>Total</td><td></td><td>${fmt(r.macrs.totalDep)}</td>
-       <td>${fmt(r.macrs.totalSavings)}</td><td>NPV: ${fmt(r.macrs.npv)}</td>
-     </tr>`;
+    const section = document.getElementById("macrsSection");
+    const container = document.getElementById("macrsContainer");
+    if (!container) return;
+
+    const strategies = [
+      { key: "macrsBH",    label: "🏠 Box House",  basis: r.addBackBH },
+      { key: "macrsFilm",  label: "🎬 Film §181",  basis: r.addBackFilm },
+      { key: "macrsSolar", label: "☀️ Solar ITC",  basis: r.addBackSolar }
+    ];
+    const active = strategies.filter(s => r[s.key] && r[s.key].rows.length > 0);
+
+    // Hide the whole section when nothing is decoupled at the state level
+    if (section) section.style.display = active.length > 0 ? "" : "none";
+    if (active.length === 0) { container.innerHTML = ""; return; }
+
+    container.innerHTML = active.map(s => {
+      const m = r[s.key];
+      const body = m.rows.map(row =>
+        `<tr><td>Year ${row.year}</td><td>${(row.rate * 100).toFixed(2)}%</td>
+         <td>${fmt(row.depreciation)}</td><td>${fmt(row.savings)}</td><td>${fmt(row.pv)}</td></tr>`
+      ).join("") +
+      `<tr style="font-weight:700;border-top:2px solid var(--primary)">
+         <td>Total</td><td></td><td>${fmt(m.totalDep)}</td>
+         <td>${fmt(m.totalSavings)}</td><td>NPV: ${fmt(m.npv)}</td>
+       </tr>`;
+      return `<div style="margin-bottom:14px">
+        <div style="font-weight:600;margin-bottom:4px">${s.label} — add-back basis ${fmt(s.basis)}</div>
+        <table class="data-table" style="width:100%;font-size:13px">
+          <thead><tr><th>Year</th><th>Rate</th><th>Depreciation</th><th>State Savings</th><th>PV (5%)</th></tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>`;
+    }).join("");
   }
 
   /* ══════════════════════════════
@@ -640,6 +695,7 @@ const App = (() => {
     initTheme();
     initTrial();
     initNumInputs();
+    initTreatmentButtons();
     initStateSelector();
     initFilingStatus();
     initDeductionType();

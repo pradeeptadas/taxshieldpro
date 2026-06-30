@@ -33,12 +33,24 @@ const StateRegistry = (() => {
     const stateStdS   = opts.stateStdS || 0;
     const stateStdMFS = opts.stateStdMFS || stateStdS;
 
+    /* Per-strategy state treatment:
+       FLOW  = state conforms; full deduction flows through in year 1.
+       MACRS = state decouples; loss added back year 1, recovered via 5-yr MACRS.
+       Defaults derive from the feature flags; override via opts.stateTreatment. */
+    const decouple = feat.decouplesBonusDepreciation;
+    const stateTreatment = Object.assign({
+      bh:    decouple ? "MACRS" : "FLOW",
+      solar: decouple ? "MACRS" : "FLOW",
+      film:  feat.filmFlowsThrough ? "FLOW" : (decouple ? "MACRS" : "FLOW")
+    }, opts.stateTreatment || {});
+
     return {
       id, name,
       city: opts.city || null,
       taxYear: 2026,
       saltCap: 25000,
       features: feat,
+      stateTreatment,
       brackets: {
         MFJ: {
           fed: FED_MFJ, state: stateMFJ, city: cityMFJ,

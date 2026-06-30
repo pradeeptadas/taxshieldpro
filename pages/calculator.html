@@ -119,6 +119,13 @@
                       <td><span id="outSolarAsset" style="color:var(--info)">$0</span></td>
                       <td><span id="outCharDonation">$0</span></td>
                     </tr>
+                    <tr id="treatmentRow">
+                      <td style="font-weight:600">State Treatment</td>
+                      <td style="text-align:center"><button type="button" id="bhTreatBtn" class="treat-btn" data-mode="MACRS" style="cursor:pointer;border:none;border-radius:6px;padding:4px 8px;font-size:11px;color:#fff;font-weight:600"></button></td>
+                      <td style="text-align:center"><button type="button" id="filmTreatBtn" class="treat-btn" data-mode="FLOW" style="cursor:pointer;border:none;border-radius:6px;padding:4px 8px;font-size:11px;color:#fff;font-weight:600"></button></td>
+                      <td style="text-align:center"><button type="button" id="solarTreatBtn" class="treat-btn" data-mode="MACRS" style="cursor:pointer;border:none;border-radius:6px;padding:4px 8px;font-size:11px;color:#fff;font-weight:600"></button></td>
+                      <td style="text-align:center;color:var(--muted);font-size:11px">n/a</td>
+                    </tr>
                     <tr>
                       <td style="font-weight:600">ITC Rate</td>
                       <td></td>
@@ -431,18 +438,15 @@
                 </tbody>
               </table>
 
-              <!-- MACRS Schedule (inline, only for decoupling states) -->
+              <!-- MACRS Schedule — one table per state-decoupled strategy -->
               <div id="macrsSection" style="margin-top:16px">
-                <h4 style="margin:0 0 8px">🏗️ MACRS Depreciation Recovery (5-Year Half-Year)</h4>
+                <h4 style="margin:0 0 8px">🏗️ State MACRS Depreciation Recovery (5-Year Half-Year)</h4>
                 <p style="font-size:12px;color:var(--muted);margin-bottom:8px">
-                  State add-back of BH + Solar losses recovered via MACRS over 6 years.
+                  Strategies set to <strong>MACRS</strong> in the State Treatment row are added back to state
+                  income in year 1 and recovered via 5-year MACRS. Strategies set to <strong>Flows through</strong>
+                  take the full state deduction in year 1 (no recovery schedule).
                 </p>
-                <table class="data-table" style="width:100%;font-size:13px">
-                  <thead>
-                    <tr><th>Year</th><th>Rate</th><th>Depreciation</th><th>State Savings</th><th>PV (5%)</th></tr>
-                  </thead>
-                  <tbody id="macrsBody"></tbody>
-                </table>
+                <div id="macrsContainer"></div>
               </div>
             </div>
           </div>
@@ -511,9 +515,9 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="../js/states/ny.js?v=7"></script>
-  <script src="../js/states/registry.js?v=7"></script>
-  <script src="../js/calc-engine.js?v=7"></script>
-  <script src="../js/app.js?v=7"></script>
+  <script src="../js/states/ny.js?v=8"></script>
+  <script src="../js/states/registry.js?v=8"></script>
+  <script src="../js/calc-engine.js?v=8"></script>
+  <script src="../js/app.js?v=8"></script>
 </body>
 </html>
