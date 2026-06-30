@@ -461,7 +461,16 @@ const App = (() => {
         charCashEl.disabled = false;
       }
     }
-    set("outCharDonation", fmt(r.charDonation));
+    // 60%-of-AGI charitable cap: show the ceiling and flag when it's binding so a
+    // custom cash increase that's already maxed doesn't look like "nothing happened".
+    const charCap = 0.60 * Math.max(r.agi, 0);
+    const charCapped = r.charExcessCF > 0.5;
+    const capNote = document.getElementById("charCapNote");
+    if (capNote) {
+      capNote.textContent = "60% AGI cap: " + fmt(charCap);
+      capNote.style.color = charCapped ? "var(--accent)" : "var(--muted)";
+    }
+    set("outCharDonation", fmt(r.charDonation) + (charCapped ? " · 60% cap" : ""));
     set("outCharDeductionTotal", fmt(r.charDonation));
 
     /* EBL */
