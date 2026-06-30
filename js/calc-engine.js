@@ -55,12 +55,20 @@ const TaxEngine = (() => {
     return rows;
   }
 
-  /* ── MACRS 5-year half-year convention ── */
-  const MACRS_RATES = [0.20, 0.32, 0.192, 0.1152, 0.1152, 0.0576];
+  /* ── MACRS half-year-convention rate tables (GDS) ── */
+  const MACRS_TABLES = {
+    3:  [0.3333, 0.4445, 0.1481, 0.0741],
+    5:  [0.20, 0.32, 0.192, 0.1152, 0.1152, 0.0576],
+    7:  [0.1429, 0.2449, 0.1749, 0.1249, 0.0893, 0.0892, 0.0893, 0.0446],
+    15: [0.05, 0.095, 0.0855, 0.0770, 0.0693, 0.0623, 0.0590, 0.0590,
+         0.0591, 0.0590, 0.0591, 0.0590, 0.0591, 0.0590, 0.0591, 0.0295]
+  };
+  const MACRS_RATES = MACRS_TABLES[5]; // back-compat default
 
-  function macrsSchedule(basis, margState, margCity, discountRate = 0.05) {
+  function macrsSchedule(basis, margState, margCity, period = 5, discountRate = 0.05) {
+    const rates = MACRS_TABLES[period] || MACRS_TABLES[5];
     let npv = 0;
-    const rows = MACRS_RATES.map((r, i) => {
+    const rows = rates.map((r, i) => {
       const dep = basis * r;
       const savings = dep * (margState + margCity);
       const pv = savings / Math.pow(1 + discountRate, i);
@@ -180,7 +188,10 @@ const TaxEngine = (() => {
     const itcCarryforward = Math.max(solarITC - fedTaxGross, 0);
     const fedTaxNet = fedTaxGross - itcApplied;
 
-    /* ── Per-strategy state treatment (FLOW vs MACRS add-back) ──
+    /* ── Per-strategy state treatment ──
+       FLOW  = "Bonus Depr": state conforms, full deduction flows through year 1.
+       MACRS = state decouples, loss added back year 1 & recovered via MACRS.
+       NONE  = "Not Allowed": loss added back year 1, no recovery at all.
        Inputs override the state's defaults; state defaults derive from features. */
     const st = stateConfig.stateTreatment || {};
     const defTreat = (key, flowDefault) =>
@@ -189,10 +200,10 @@ const TaxEngine = (() => {
     const treatSolar = feat.hasNoIncomeTax ? "FLOW" : defTreat("solarTreatment", feat.decouplesBonusDepreciation ? "MACRS" : "FLOW");
     const treatFilm  = feat.hasNoIncomeTax ? "FLOW" : defTreat("filmTreatment",  feat.filmFlowsThrough ? "FLOW" : (feat.decouplesBonusDepreciation ? "MACRS" : "FLOW"));
 
-    /* ── State tax: add back the EBL portion of each MACRS-treated strategy ── */
-    const addBackBH    = treatBH    === "MACRS" ? eblBH    : 0;
-    const addBackSolar = treatSolar === "MACRS" ? eblSolar : 0;
-    const addBackFilm  = treatFilm  === "MACRS" ? eblFilm  : 0;
+    /* ── State tax: add back the EBL portion of each decoupled (MACRS or NONE) strategy ── */
+    const addBackBH    = treatBH    !== "FLOW" ? eblBH    : 0;
+    const addBackSolar = treatSolar !== "FLOW" ? eblSolar : 0;
+    const addBackFilm  = treatFilm  !== "FLOW" ? eblFilm  : 0;
     const stateAddBack = addBackBH + addBackSolar + addBackFilm;
     const stateTaxableIncome = Math.max(agi + stateAddBack - stateDeduction, 0);
 
@@ -309,14 +320,19 @@ const TaxEngine = (() => {
     const macrsSolarBasis = treatSolar === "MACRS" ? solarLoss : 0;
     const macrsFilmBasis  = treatFilm  === "MACRS" ? filmLoss  : 0;
     const macrsBasis = macrsBHBasis + macrsSolarBasis + macrsFilmBasis;
+    // Per-strategy recovery period (years). Solar is 5-year property by default.
+    const macrsBHYears    = inputs.macrsBHYears    || 5;
+    const macrsSolarYears = inputs.macrsSolarYears || 5;
+    const macrsFilmYears  = inputs.macrsFilmYears  || 5;
     const margState = b.state ? marginalRate(stateTaxableIncome, b.state) : (feat.flatRate || 0);
     const margCity = (cityTaxOn && b.city) ? marginalRate(cityTaxableIncome, b.city) : 0;
     const emptyMacrs = { rows: [], npv: 0, totalDep: 0, totalSavings: 0 };
-    const mkMacrs = (basis) => basis > 0 ? macrsSchedule(basis, margState, margCity) : emptyMacrs;
-    const macrsBH    = mkMacrs(macrsBHBasis);
-    const macrsSolar = mkMacrs(macrsSolarBasis);
-    const macrsFilm  = mkMacrs(macrsFilmBasis);
-    const macrs = mkMacrs(macrsBasis); // combined (backward compat)
+    const mkMacrs = (basis, period) => basis > 0 ? macrsSchedule(basis, margState, margCity, period) : emptyMacrs;
+    const macrsBH    = mkMacrs(macrsBHBasis,    macrsBHYears);
+    const macrsSolar = mkMacrs(macrsSolarBasis, macrsSolarYears);
+    const macrsFilm  = mkMacrs(macrsFilmBasis,  macrsFilmYears);
+    // Combined uses solar's period as a representative for the multi-year recovery row.
+    const macrs = mkMacrs(macrsBasis, macrsSolarYears);
 
     /* ── Combined 2-year ── */
     const combined2YrSavings = yr1Savings + yr2Savings;
@@ -363,6 +379,7 @@ const TaxEngine = (() => {
       // MACRS
       macrs, macrsBH, macrsSolar, macrsFilm, macrsBasis, margState, margCity,
       macrsBHBasis, macrsSolarBasis, macrsFilmBasis,
+      macrsBHYears, macrsSolarYears, macrsFilmYears,
 
       // Combined
       combined2YrSavings, totalCashInvested, roi,

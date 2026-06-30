@@ -189,30 +189,28 @@ const App = (() => {
     return null;
   }
 
-  /* State Treatment toggle buttons (FLOW ⟷ MACRS) */
-  function setTreatBtn(btn, mode) {
-    if (!btn) return;
-    btn.dataset.mode = mode;
-    if (mode === "MACRS") {
-      btn.textContent = "📅 MACRS";
-      btn.title = "Decoupled: loss added back to state income in year 1, recovered via 5-year MACRS";
-      btn.style.background = "var(--accent)";
-    } else {
-      btn.textContent = "↪ Flows through";
-      btn.title = "Conforms: full state deduction taken in year 1";
-      btn.style.background = "var(--info)";
-    }
-  }
+  /* Per-strategy MACRS recovery period (years), persisted across re-renders
+     so the bottom schedule's period dropdowns keep their value. */
+  const macrsPeriods = { bh: 5, solar: 5, film: 5 };
 
   function initTreatmentButtons() {
-    ["bhTreatBtn", "filmTreatBtn", "solarTreatBtn"].forEach(id => {
-      const btn = document.getElementById(id);
-      if (!btn) return;
-      btn.addEventListener("click", () => {
-        setTreatBtn(btn, btn.dataset.mode === "MACRS" ? "FLOW" : "MACRS");
-        recalculate();
-      });
+    ["bhTreatSel", "filmTreatSel", "solarTreatSel"].forEach(id => {
+      const sel = document.getElementById(id);
+      if (sel) sel.addEventListener("change", recalculate);
     });
+    // Recovery-period dropdowns live inside the (re-rendered) MACRS container —
+    // use event delegation so they survive innerHTML rebuilds.
+    const macrsBox = document.getElementById("macrsContainer");
+    if (macrsBox) {
+      macrsBox.addEventListener("change", (e) => {
+        const sel = e.target;
+        if (sel && sel.classList && sel.classList.contains("macrs-period")) {
+          const key = sel.dataset.strat;
+          if (key) macrsPeriods[key] = parseInt(sel.value, 10) || 5;
+          recalculate();
+        }
+      });
+    }
   }
 
   function updateStateUI() {
@@ -260,21 +258,16 @@ const App = (() => {
     const stateTaxSec = document.getElementById("stateTaxSection");
     if (stateTaxSec) stateTaxSec.style.display = feat.hasNoIncomeTax ? "none" : "";
 
-    // Per-strategy State Treatment buttons — default from the selected state.
+    // Per-strategy State Treatment dropdowns — default from the selected state.
     // Visibility of the add-back row / MACRS tables is driven at render time
     // based on the actual add-back amount (which respects user overrides).
     const treat = config.stateTreatment || {};
     const treatRow = document.getElementById("treatmentRow");
     if (treatRow) treatRow.style.display = feat.hasNoIncomeTax ? "none" : "";
-    setTreatBtn(document.getElementById("bhTreatBtn"), feat.hasNoIncomeTax ? "FLOW" : (treat.bh || "FLOW"));
-    setTreatBtn(document.getElementById("filmTreatBtn"), feat.hasNoIncomeTax ? "FLOW" : (treat.film || "FLOW"));
-    setTreatBtn(document.getElementById("solarTreatBtn"), feat.hasNoIncomeTax ? "FLOW" : (treat.solar || "FLOW"));
-
-    // MACRS years default: 6 for any state that decouples a strategy by default
-    const anyMacrsDefault = !feat.hasNoIncomeTax &&
-      (treat.bh === "MACRS" || treat.solar === "MACRS" || treat.film === "MACRS");
-    const macrsYearsEl = document.getElementById("macrsYears");
-    if (macrsYearsEl) macrsYearsEl.value = anyMacrsDefault ? 6 : 0;
+    const setSel = (id, val) => { const s = document.getElementById(id); if (s) s.value = val; };
+    setSel("bhTreatSel",    feat.hasNoIncomeTax ? "FLOW" : (treat.bh || "FLOW"));
+    setSel("filmTreatSel",  feat.hasNoIncomeTax ? "FLOW" : (treat.film || "FLOW"));
+    setSel("solarTreatSel", feat.hasNoIncomeTax ? "FLOW" : (treat.solar || "FLOW"));
 
     // Update EBL display
     const fs = document.getElementById("filingStatus")?.value || "MFJ";
@@ -399,11 +392,14 @@ const App = (() => {
       yr2SpouseSalary: V("yr2SpouseSalary") || V("spouseSalary"),
       yr2OtherIncome: V("yr2OtherIncome"),
       solarRecaptureRate: V("solarRecaptureRate") / 100,
-      macrsYears: isPremium && stratOn ? (V("macrsYears") || 0) : 0,
       // Per-strategy state treatment (null → engine uses the state's default)
-      bhTreatment: document.getElementById("bhTreatBtn")?.dataset.mode || null,
-      filmTreatment: document.getElementById("filmTreatBtn")?.dataset.mode || null,
-      solarTreatment: document.getElementById("solarTreatBtn")?.dataset.mode || null
+      bhTreatment: document.getElementById("bhTreatSel")?.value || null,
+      filmTreatment: document.getElementById("filmTreatSel")?.value || null,
+      solarTreatment: document.getElementById("solarTreatSel")?.value || null,
+      // Per-strategy MACRS recovery period (years)
+      macrsBHYears: macrsPeriods.bh,
+      macrsFilmYears: macrsPeriods.film,
+      macrsSolarYears: macrsPeriods.solar
     };
 
     currentStateConfig = getSelectedConfig();
@@ -562,15 +558,18 @@ const App = (() => {
     if (!container) return;
 
     const strategies = [
-      { key: "macrsBH",    label: "🏠 Box House",  basis: r.macrsBHBasis },
-      { key: "macrsFilm",  label: "🎬 Film §181",  basis: r.macrsFilmBasis },
-      { key: "macrsSolar", label: "☀️ Solar ITC",  basis: r.macrsSolarBasis }
+      { key: "macrsBH",    periodKey: "bh",    label: "🏠 Box House", basis: r.macrsBHBasis },
+      { key: "macrsFilm",  periodKey: "film",  label: "🎬 Film §181", basis: r.macrsFilmBasis },
+      { key: "macrsSolar", periodKey: "solar", label: "☀️ Solar ITC", basis: r.macrsSolarBasis }
     ];
     const active = strategies.filter(s => r[s.key] && r[s.key].rows.length > 0);
 
-    // Hide the whole section when nothing is decoupled at the state level
+    // Hide the whole section when nothing is set to MACRS
     if (section) section.style.display = active.length > 0 ? "" : "none";
     if (active.length === 0) { container.innerHTML = ""; return; }
+
+    const periodOpts = (sel) => [3, 5, 7, 15]
+      .map(y => `<option value="${y}"${y === sel ? " selected" : ""}>${y}-year</option>`).join("");
 
     container.innerHTML = active.map(s => {
       const m = r[s.key];
@@ -582,8 +581,13 @@ const App = (() => {
          <td>Total</td><td></td><td>${fmt(m.totalDep)}</td>
          <td>${fmt(m.totalSavings)}</td><td>NPV: ${fmt(m.npv)}</td>
        </tr>`;
-      return `<div style="margin-bottom:14px">
-        <div style="font-weight:600;margin-bottom:4px">${s.label} — depreciable basis ${fmt(s.basis)}</div>
+      return `<div style="margin-bottom:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+          <div style="font-weight:600">${s.label} — depreciable basis ${fmt(s.basis)}</div>
+          <label style="font-size:12px;color:var(--muted)">Recovery period:
+            <select class="macrs-period" data-strat="${s.periodKey}" style="font-size:12px;width:auto;margin-left:4px">${periodOpts(macrsPeriods[s.periodKey])}</select>
+          </label>
+        </div>
         <table class="data-table" style="width:100%;font-size:13px">
           <thead><tr><th>Year</th><th>Rate</th><th>Depreciation</th><th>State Savings</th><th>PV (5%)</th></tr></thead>
           <tbody>${body}</tbody>
