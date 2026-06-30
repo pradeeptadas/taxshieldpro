@@ -102,8 +102,11 @@ const TaxEngine = (() => {
     const solarITCRate = inputs.solarITCRate || 0.30;
     const solarAsset = solarEquity * solarLeverage;
     const solarITC = solarAsset * solarITCRate;
-    const solarBasis = solarAsset - solarITC * 0.5;
-    const solarLoss = Math.max(solarBasis + 632 - 4264, 0); // adjusted for non-depreciable components
+    const solarBasis = solarAsset - solarITC * 0.5; // §50(c): basis reduced by 50% of ITC
+    // Year-1 depreciable loss = depreciable basis × bonus-depreciation fraction.
+    // Default assumes 100% bonus depreciation on the full (post-ITC) basis.
+    const solarNonDeprFraction = inputs.solarNonDeprFraction || 0;
+    const solarLoss = Math.max(solarBasis * (1 - solarNonDeprFraction), 0);
 
     /* ── AGI before strategies ── */
     const agiGross = grossIncome;
@@ -118,6 +121,12 @@ const TaxEngine = (() => {
     const eblBH = Math.max(eblDed - eblFilm - eblSolar, 0);
     const eblTotal = eblFilm + eblSolar + eblBH;
     const nolCF = Math.max(totalLoss - eblCap, 0);
+
+    /* Per-strategy NOL carryforward = each strategy's loss beyond its EBL-deducted slice.
+       Used to keep decoupled (MACRS) strategies' losses out of state year-2 income. */
+    const nolFilm  = Math.max(filmLoss  - eblFilm,  0);
+    const nolSolar = Math.max(solarLoss - eblSolar, 0);
+    const nolBH    = Math.max(bhLoss    - eblBH,    0);
 
     /* ── Charitable: Max mode uses post-EBL AGI for 60% cap ── */
     const charMaxMode = inputs.charMaxMode || false;
@@ -143,7 +152,14 @@ const TaxEngine = (() => {
     const stateLocal = inputs.stateLocal || 0;
     const charitableCash = inputs.charitableCash || 0;
     const otherDeductions = inputs.otherDeductions || 0;
-    const saltCap = stateConfig.saltCap || 25000;
+    // OBBBA SALT cap with high-income phase-down (2026):
+    //   nominal $40,400 ($20,200 MFS), reduced 30% of MAGI over $505,000
+    //   ($252,500 MFS), floored at $10,000 ($5,000 MFS).
+    const saltMagi = Math.max(agiGross - eblTotal, 0);
+    const saltNominal   = fs === "MFS" ? 20200  : 40400;
+    const saltThreshold = fs === "MFS" ? 252500 : 505000;
+    const saltFloor     = fs === "MFS" ? 5000   : 10000;
+    const saltCap = Math.max(saltFloor, saltNominal - 0.30 * Math.max(saltMagi - saltThreshold, 0));
     const saltUsed = Math.min(propTax + stateLocal, saltCap);
     const itemized = saltUsed + mortgage + charitableCash + charUsed + otherDeductions;
     const fedDeduction = (dedType === "STANDARD") ? b.fedStd : itemized;
@@ -183,17 +199,26 @@ const TaxEngine = (() => {
     /* ── City tax ── */
     const cityTaxableIncome = stateTaxableIncome; // same base
 
-    /* ── State/city tax calculation ── */
-    let stateTax = 0;
-    if (!feat.hasNoIncomeTax) {
+    /* ── State tax helper (flat rate / brackets + optional millionaire surtax) ── */
+    const stateTaxFor = (taxable) => {
+      if (feat.hasNoIncomeTax) return 0;
+      let t = 0;
       if (stateConfig.calcStateTax) {
-        stateTax = stateConfig.calcStateTax(stateTaxableIncome, b);
+        t = stateConfig.calcStateTax(taxable, b);
       } else if (feat.flatRate) {
-        stateTax = stateTaxableIncome * feat.flatRate;
+        t = taxable * feat.flatRate;
       } else if (b.state) {
-        stateTax = bracketTax(stateTaxableIncome, b.state);
+        t = bracketTax(taxable, b.state);
       }
-    }
+      // e.g. Massachusetts 4% surtax on income over ~$1.1M
+      if (feat.surtaxRate && feat.surtaxThreshold) {
+        t += Math.max(taxable - feat.surtaxThreshold, 0) * feat.surtaxRate;
+      }
+      return t;
+    };
+
+    /* ── State/city tax calculation ── */
+    const stateTax = stateTaxFor(stateTaxableIncome);
 
     const cityTaxOn = inputs.cityTaxOn !== false; // default true for backward compat
     let cityTax = 0;
@@ -218,49 +243,47 @@ const TaxEngine = (() => {
     const baseAGI = agiGross;
     const baseFedTaxable = Math.max(baseAGI - b.fedStd, 0);
     const baseFedTax = bracketTax(baseFedTaxable, b.fed);
-    let baseStateTax = 0;
-    if (!feat.hasNoIncomeTax) {
-      const baseStateTaxable = Math.max(baseAGI - stateStd, 0);
-      if (stateConfig.calcStateTax) {
-        baseStateTax = stateConfig.calcStateTax(baseStateTaxable, b);
-      } else if (feat.flatRate) {
-        baseStateTax = baseStateTaxable * feat.flatRate;
-      } else if (b.state) {
-        baseStateTax = bracketTax(baseStateTaxable, b.state);
-      }
-    }
     const baseStateTaxable = Math.max(baseAGI - stateStd, 0);
+    const baseStateTax = stateTaxFor(baseStateTaxable);
     const baseCityTax = (cityTaxOn && b.city) ? bracketTax(baseStateTaxable, b.city) : 0;
     const baseTotalTax = baseFedTax + baseStateTax + baseCityTax + fica.total + spouseFica.total;
     const yr1Savings = baseTotalTax - totalTax;
 
-    /* ── Year 2 (NOL + recapture) ── */
+    /* ── Year 2 (NOL carryforward + solar ITC recapture) ── */
     const yr2Salary = inputs.yr2Salary || salary;
     const yr2SpouseSalary = (fs === "MFS") ? (inputs.yr2SpouseSalary || spouseSalary) : 0;
     const yr2OtherIncome = inputs.yr2OtherIncome || 0;
-    const solarRecaptureRate = inputs.solarRecaptureRate || 0.30;
-    const solarRecapture = solarOn ? solarLoss * solarRecaptureRate : 0;
-    const yr2Gross = yr2Salary + yr2SpouseSalary + yr2OtherIncome + solarRecapture;
-    const yr2NOLApplied = Math.min(nolCF, yr2Gross);
+    const yr2Gross = yr2Salary + yr2SpouseSalary + yr2OtherIncome;
+    const yr2FedDed = b.fedStd;   // Year 2 uses standard deductions
+    const yr2StateDed = stateStd;
+
+    /* Federal NOL carryforward, limited to 80% of taxable income (§172(a)) */
+    const yr2FedTaxableBeforeNOL = Math.max(yr2Gross - yr2FedDed, 0);
+    const yr2NOLApplied = Math.min(nolCF, 0.80 * yr2FedTaxableBeforeNOL);
     const yr2NOLRemaining = nolCF - yr2NOLApplied;
     const yr2AGI = yr2Gross - yr2NOLApplied;
-    const yr2FedDed = b.fedStd; // Year 2 uses standard deductions
     const yr2FedTaxable = Math.max(yr2AGI - yr2FedDed, 0);
     const yr2FedTax = bracketTax(yr2FedTaxable, b.fed);
     const yr2ITCApplied = Math.min(itcCarryforward, yr2FedTax);
-    const yr2FedTaxNet = yr2FedTax - yr2ITCApplied;
-    const yr2StateDed = stateStd; // Year 2 uses standard deductions
-    const yr2StateTaxable = Math.max(yr2AGI - yr2StateDed, 0);
-    let yr2StateTax = 0;
-    if (!feat.hasNoIncomeTax) {
-      if (stateConfig.calcStateTax) {
-        yr2StateTax = stateConfig.calcStateTax(yr2StateTaxable, b);
-      } else if (feat.flatRate) {
-        yr2StateTax = yr2StateTaxable * feat.flatRate;
-      } else if (b.state) {
-        yr2StateTax = bracketTax(yr2StateTaxable, b.state);
-      }
-    }
+
+    /* Solar ITC recapture (§50(a)) — a year-2 increase in TAX on the credit (only on
+       early disposition), NOT additional income. Rate defaults to 0 (asset held). */
+    const solarRecaptureRate = inputs.solarRecaptureRate || 0;
+    const solarRecaptureTax = solarOn ? solarITC * solarRecaptureRate : 0;
+    const solarRecapture = solarRecaptureTax; // alias kept for UI/back-compat
+    const yr2FedTaxNet = Math.max(yr2FedTax - yr2ITCApplied, 0) + solarRecaptureTax;
+
+    /* State year 2: decoupled (MACRS) strategies do NOT get the NOL benefit at the
+       state level — the state recovers them via MACRS instead. Only flow-through
+       strategies' NOL reduces state income (no double-count with the MACRS schedule). */
+    const nolStateFlow =
+      (treatBH    === "FLOW" ? nolBH    : 0) +
+      (treatSolar === "FLOW" ? nolSolar : 0) +
+      (treatFilm  === "FLOW" ? nolFilm  : 0);
+    const yr2StateTaxableBeforeNOL = Math.max(yr2Gross - yr2StateDed, 0);
+    const yr2StateNOLApplied = Math.min(nolStateFlow, yr2StateTaxableBeforeNOL);
+    const yr2StateTaxable = Math.max(yr2Gross - yr2StateNOLApplied - yr2StateDed, 0);
+    const yr2StateTax = stateTaxFor(yr2StateTaxable);
     const yr2CityTax = (cityTaxOn && b.city) ? bracketTax(yr2StateTaxable, b.city) : 0;
     const yr2FICA = calcFICA(yr2Salary, b.addMedThreshold);
     const yr2SpouseFICA = (fs === "MFS" && yr2SpouseSalary > 0)
@@ -273,29 +296,26 @@ const TaxEngine = (() => {
     const yr2BaseFedTaxable = Math.max(yr2BaseGross - b.fedStd, 0);
     const yr2BaseFedTax = bracketTax(yr2BaseFedTaxable, b.fed);
     const yr2BaseStateTaxable = Math.max(yr2BaseGross - stateStd, 0);
-    let yr2BaseStateTax = 0;
-    if (!feat.hasNoIncomeTax) {
-      if (stateConfig.calcStateTax) {
-        yr2BaseStateTax = stateConfig.calcStateTax(yr2BaseStateTaxable, b);
-      } else if (feat.flatRate) {
-        yr2BaseStateTax = yr2BaseStateTaxable * feat.flatRate;
-      } else if (b.state) {
-        yr2BaseStateTax = bracketTax(yr2BaseStateTaxable, b.state);
-      }
-    }
+    const yr2BaseStateTax = stateTaxFor(yr2BaseStateTaxable);
     const yr2BaseCityTax = (cityTaxOn && b.city) ? bracketTax(yr2BaseStateTaxable, b.city) : 0;
     const yr2BaseTotalTax = yr2BaseFedTax + yr2BaseStateTax + yr2BaseCityTax + yr2FICA.total + yr2SpouseFICA.total;
     const yr2Savings = yr2BaseTotalTax - yr2TotalTax;
 
-    /* ── MACRS schedule (per-strategy + combined) ── */
-    const macrsBasis = stateAddBack; // portions added back by state
+    /* ── MACRS schedule (per-strategy + combined) ──
+       Basis = the FULL depreciable loss of each MACRS-treated strategy (the asset
+       the state depreciates), not just the EBL-deducted slice. The state recovers
+       this over 6 years; the matching NOL is excluded from state year-2 income above. */
+    const macrsBHBasis    = treatBH    === "MACRS" ? bhLoss    : 0;
+    const macrsSolarBasis = treatSolar === "MACRS" ? solarLoss : 0;
+    const macrsFilmBasis  = treatFilm  === "MACRS" ? filmLoss  : 0;
+    const macrsBasis = macrsBHBasis + macrsSolarBasis + macrsFilmBasis;
     const margState = b.state ? marginalRate(stateTaxableIncome, b.state) : (feat.flatRate || 0);
     const margCity = (cityTaxOn && b.city) ? marginalRate(cityTaxableIncome, b.city) : 0;
     const emptyMacrs = { rows: [], npv: 0, totalDep: 0, totalSavings: 0 };
     const mkMacrs = (basis) => basis > 0 ? macrsSchedule(basis, margState, margCity) : emptyMacrs;
-    const macrsBH    = mkMacrs(addBackBH);
-    const macrsSolar = mkMacrs(addBackSolar);
-    const macrsFilm  = mkMacrs(addBackFilm);
+    const macrsBH    = mkMacrs(macrsBHBasis);
+    const macrsSolar = mkMacrs(macrsSolarBasis);
+    const macrsFilm  = mkMacrs(macrsFilmBasis);
     const macrs = mkMacrs(macrsBasis); // combined (backward compat)
 
     /* ── Combined 2-year ── */
@@ -335,13 +355,14 @@ const TaxEngine = (() => {
       totalTax, baseTotalTax, yr1Savings,
 
       // Year 2
-      solarRecapture, yr2Gross, yr2NOLApplied, yr2NOLRemaining, yr2AGI,
-      yr2FedTaxable, yr2FedTax, yr2FedTaxNet, yr2ITCApplied,
+      solarRecapture, solarRecaptureTax, yr2Gross, yr2NOLApplied, yr2NOLRemaining, yr2AGI,
+      yr2FedTaxable, yr2FedTax, yr2FedTaxNet, yr2ITCApplied, yr2StateNOLApplied,
       yr2StateTaxable, yr2StateTax, yr2CityTax, yr2FICA, yr2SpouseFICA,
       yr2TotalTax, yr2BaseTotalTax, yr2Savings,
 
       // MACRS
       macrs, macrsBH, macrsSolar, macrsFilm, macrsBasis, margState, margCity,
+      macrsBHBasis, macrsSolarBasis, macrsFilmBasis,
 
       // Combined
       combined2YrSavings, totalCashInvested, roi,

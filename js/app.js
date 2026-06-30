@@ -398,7 +398,7 @@ const App = (() => {
       yr2Salary: V("yr2Salary") || V("salary"),
       yr2SpouseSalary: V("yr2SpouseSalary") || V("spouseSalary"),
       yr2OtherIncome: V("yr2OtherIncome"),
-      solarRecaptureRate: V("solarRecaptureRate") / 100 || 0.30,
+      solarRecaptureRate: V("solarRecaptureRate") / 100,
       macrsYears: isPremium && stratOn ? (V("macrsYears") || 0) : 0,
       // Per-strategy state treatment (null → engine uses the state's default)
       bhTreatment: document.getElementById("bhTreatBtn")?.dataset.mode || null,
@@ -553,9 +553,9 @@ const App = (() => {
     if (!container) return;
 
     const strategies = [
-      { key: "macrsBH",    label: "🏠 Box House",  basis: r.addBackBH },
-      { key: "macrsFilm",  label: "🎬 Film §181",  basis: r.addBackFilm },
-      { key: "macrsSolar", label: "☀️ Solar ITC",  basis: r.addBackSolar }
+      { key: "macrsBH",    label: "🏠 Box House",  basis: r.macrsBHBasis },
+      { key: "macrsFilm",  label: "🎬 Film §181",  basis: r.macrsFilmBasis },
+      { key: "macrsSolar", label: "☀️ Solar ITC",  basis: r.macrsSolarBasis }
     ];
     const active = strategies.filter(s => r[s.key] && r[s.key].rows.length > 0);
 
@@ -574,7 +574,7 @@ const App = (() => {
          <td>${fmt(m.totalSavings)}</td><td>NPV: ${fmt(m.npv)}</td>
        </tr>`;
       return `<div style="margin-bottom:14px">
-        <div style="font-weight:600;margin-bottom:4px">${s.label} — add-back basis ${fmt(s.basis)}</div>
+        <div style="font-weight:600;margin-bottom:4px">${s.label} — depreciable basis ${fmt(s.basis)}</div>
         <table class="data-table" style="width:100%;font-size:13px">
           <thead><tr><th>Year</th><th>Rate</th><th>Depreciation</th><th>State Savings</th><th>PV (5%)</th></tr></thead>
           <tbody>${body}</tbody>

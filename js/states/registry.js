@@ -132,7 +132,12 @@ const StateRegistry = (() => {
     notes: { info: "KY state rate 3.5% (2026). Louisville Metro occupational tax 2.20%. Lexington 2.25%." }
   });
   configs.LA = makeFlat("LA", "Louisiana",      0.03,   12500, 25000);
-  configs.MA = makeFlat("MA", "Massachusetts",  0.05,   0,     0);
+  configs.MA = makeConfig("MA", "Massachusetts", {
+    // 5% flat + 4% "millionaire's surtax" on income over ~$1.1M (2026)
+    features: { flatRate: 0.05, surtaxRate: 0.04, surtaxThreshold: 1107750 },
+    stateStdS: 0, stateStdMFJ: 0,
+    notes: { info: "MA 5% flat plus 4% surtax on taxable income over $1,107,750 (2026); effective top rate 9%." }
+  });
   configs.MI = makeConfig("MI", "Michigan", {
     city: "Detroit",
     features: { flatRate: 0.0425, hasCityTax: true },

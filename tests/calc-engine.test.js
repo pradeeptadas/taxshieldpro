@@ -93,8 +93,8 @@ test("Solar Basis = $167,952", () => {
   assertClose(r.solarBasis, 167952, "solarBasis", 2);
 });
 
-test("Solar Loss = $164,320 (adjusted)", () => {
-  assertClose(r.solarLoss, 164320, "solarLoss", 2);
+test("Solar Loss = $167,952 (full depreciable basis)", () => {
+  assertClose(r.solarLoss, 167952, "solarLoss", 2);
 });
 
 // --- EBL Allocation ---
@@ -114,8 +114,8 @@ test("EBL Total = $512,000", () => {
   assertClose(r.eblTotal, 512000, "eblTotal");
 });
 
-test("NOL Carryforward = $802,320", () => {
-  assertClose(r.nolCF, 802320, "nolCF", 2);
+test("NOL Carryforward = $805,952", () => {
+  assertClose(r.nolCF, 805952, "nolCF", 2);
 });
 
 // --- Charitable ---
@@ -132,8 +132,8 @@ test("AGI = $788,000", () => {
   assertClose(r.agi, 788000, "agi");
 });
 
-test("Fed Taxable Income = $270,200", () => {
-  assertClose(r.fedTaxableIncome, 270200, "fedTaxableIncome", 2);
+test("Fed Taxable Income = $285,200 (SALT phase-down to $10k floor)", () => {
+  assertClose(r.fedTaxableIncome, 285200, "fedTaxableIncome", 2);
 });
 
 test("State Taxable Income = $307,200", () => {
@@ -141,12 +141,12 @@ test("State Taxable Income = $307,200", () => {
 });
 
 // --- Taxes ---
-test("Federal Tax (gross) = $50,066", () => {
-  assertClose(r.fedTaxGross, 50066, "fedTaxGross", 2);
+test("Federal Tax (gross) = $53,666", () => {
+  assertClose(r.fedTaxGross, 53666, "fedTaxGross", 2);
 });
 
-test("Solar ITC Applied = $50,066 (capped at fed tax)", () => {
-  assertClose(r.itcApplied, 50066, "itcApplied", 2);
+test("Solar ITC Applied = $53,666 (capped at fed tax)", () => {
+  assertClose(r.itcApplied, 53666, "itcApplied", 2);
 });
 
 test("Federal Tax (net) = $0", () => {
@@ -312,8 +312,10 @@ test("Charitable custom mode with $0 cash = $0 donation", () => {
 
 console.log("\n══ Year 2 — All Strategies ON (NY) ══\n");
 
-test("Year 2 solar recapture > 0 when solar ON", () => {
-  assert(r.solarRecapture > 0, `solarRecapture should be > 0, got ${r.solarRecapture}`);
+test("Year 2 solar ITC recapture is a tax = ITC × rate (disposal); 0 by default", () => {
+  assert(r.solarRecapture === 0, `default (no disposal) recapture should be 0, got ${r.solarRecapture}`);
+  const d = TaxEngine.calculate({ ...DEFAULT_INPUTS, solarRecaptureRate: 0.30 }, NY_CONFIG);
+  assertClose(d.solarRecapture, d.solarITC * 0.30, "solarRecaptureTax", 2);
 });
 
 test("Year 2 NOL applied > 0 when strategies ON", () => {
@@ -442,8 +444,11 @@ test("NY: state add-back > 0 (decouples bonus depreciation)", () => {
   assert(nyStrat.stateAddBack > 0, `stateAddBack should be > 0, got ${nyStrat.stateAddBack}`);
 });
 
-test("NY: MACRS basis = state add-back", () => {
-  assertClose(nyStrat.macrsBasis, nyStrat.stateAddBack, "macrsBasis", 2);
+test("NY: MACRS basis = full loss of decoupled strategies (BH + Solar)", () => {
+  // NY: Box House & Solar are MACRS-treated (Film flows through). Basis is the
+  // full depreciable loss, not just the EBL-deducted slice (which is stateAddBack).
+  assertClose(nyStrat.macrsBasis, nyStrat.bhLoss + nyStrat.solarLoss, "macrsBasis", 2);
+  assert(nyStrat.macrsBasis > nyStrat.stateAddBack, "basis should exceed the year-1 add-back");
 });
 
 console.log("\n══ Cross-State: FL with strategies ══\n");
@@ -548,6 +553,44 @@ test("WV 2026 rates (2.11% bottom, 4.58% top) with MFS half-width", () => {
   assert(wv.MFJ.state[0][1] === 0.0211, "WV bottom rate 2.11%");
   assert(wv.MFJ.state[wv.MFJ.state.length - 1][1] === 0.0458, "WV top rate 4.58%");
   assert(wv.MFS.state[0][0] === 5000, "WV MFS first threshold half-width $5,000");
+});
+
+// ═══════════════════════════════════════════════════════
+// Strategy-model & federal-rule fixes (audit follow-up)
+// ═══════════════════════════════════════════════════════
+
+console.log("\n══ Strategy Model & Federal Rules ══\n");
+
+test("SALT phase-down: high-income filer floored at $10,000", () => {
+  // Default scenario MAGI ($788k) is well over $505k → cap floors at $10k
+  assertClose(r.saltUsed, 10000, "saltUsed", 1);
+});
+
+test("SALT phase-down: low-income filer keeps full $40,400 nominal cap", () => {
+  const low = TaxEngine.calculate(
+    { ...DEFAULT_INPUTS, salary: 200000, stateLocal: 60000 }, NY_CONFIG);
+  assertClose(low.saltUsed, 40400, "saltUsed", 1); // MAGI $200k < $505k threshold
+});
+
+test("Massachusetts 4% millionaire surtax applies over $1.1M", () => {
+  const MA = StateRegistry.get("MA");
+  const hi = TaxEngine.calculate(
+    { filingStatus: "MFJ", salary: 1500000, dedType: "STANDARD",
+      bhOn: false, filmOn: false, solarOn: false, charMaxMode: false }, MA);
+  // 5% flat + 4% over $1,107,750 → effective tax exceeds a pure 5% flat
+  assert(hi.stateTax > hi.stateTaxableIncome * 0.05,
+    `MA tax ${hi.stateTax} should exceed 5% flat ${hi.stateTaxableIncome * 0.05}`);
+});
+
+test("Year-2 NOL capped at 80% of taxable income (§172)", () => {
+  const cap = 0.80 * Math.max(r.yr2Gross - r.fedStd, 0);
+  assert(r.yr2NOLApplied <= cap + 1, `yr2NOLApplied ${r.yr2NOLApplied} exceeds 80% cap ${cap}`);
+});
+
+test("Decoupled NOL excluded from state year-2 (NY: BH+Solar are MACRS)", () => {
+  // NY recovers BH/Solar via MACRS, so their NOL must NOT reduce NY year-2 income.
+  assert(nyStrat.yr2StateNOLApplied < nyStrat.yr2NOLApplied,
+    `state NOL ${nyStrat.yr2StateNOLApplied} should be < federal NOL ${nyStrat.yr2NOLApplied}`);
 });
 
 // ═══════════════════════════════════════════════════════
