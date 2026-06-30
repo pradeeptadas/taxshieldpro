@@ -9,6 +9,9 @@ const App = (() => {
   /* ── State ── */
   let currentResult = null;
   let currentStateConfig = null;
+  // Premium gating disabled for now — everything is unlocked while we get the
+  // core calculator working flawlessly. Flip to false to re-enable the trial gate.
+  const PREMIUM_DISABLED = true;
   let isPremium = false;
   const TRIAL_KEY = "tsp_trial_start";
   const TRIAL_MS = 24 * 60 * 60 * 1000; // 1 day
@@ -83,6 +86,12 @@ const App = (() => {
      Premium / Trial
      ══════════════════════════════ */
   function initTrial() {
+    if (PREMIUM_DISABLED) {
+      isPremium = true;
+      updatePremiumUI();
+      updateTrialBanner();
+      return;
+    }
     const start = localStorage.getItem(TRIAL_KEY);
     if (start) {
       const elapsed = Date.now() - parseInt(start, 10);
@@ -116,6 +125,10 @@ const App = (() => {
   function updateTrialBanner() {
     const banner = document.getElementById("trialBanner");
     if (!banner) return;
+    if (PREMIUM_DISABLED) {
+      banner.style.display = "none";
+      return;
+    }
     const start = localStorage.getItem(TRIAL_KEY);
     if (!start || !isPremium) {
       banner.style.display = "none";
@@ -405,7 +418,19 @@ const App = (() => {
     set("outSolarITC", fmt(r.solarITC));
     set("outSolarBasis", fmt(r.solarBasis));
     set("outSolarLoss", fmt(r.solarLoss));
-    set("outCharCash", fmt(r.charCash));
+    /* Charitable cash field: auto-filled & locked in MAX mode, editable in CUSTOM */
+    const charCashEl = document.getElementById("charLevCash");
+    const charModeMax = (document.getElementById("charMode")?.value || "MAX") === "MAX";
+    if (charCashEl) {
+      if (charModeMax) {
+        charCashEl.disabled = true;
+        if (document.activeElement !== charCashEl) {
+          charCashEl.value = Math.round(r.charCash).toLocaleString("en-US");
+        }
+      } else {
+        charCashEl.disabled = false;
+      }
+    }
     set("outCharDonation", fmt(r.charDonation));
     set("outCharDeductionTotal", fmt(r.charDonation));
 
